@@ -1,19 +1,11 @@
 # Continuously capture frames and perform object detection on them
 import cv2
 import numpy as np
+import json
 
 from gymnoscamera import Machine
 from gymnoscamera import Predictors
 
-# TODO: Fetch this from a json file, currently being mocked with this dict
-CAMERA_MACHINES = {
-    "Main Floor": [
-        [0.1, 0.1, 0.3, 0.8, "Squat-Rack"],
-        [0.75, 0.2, 0.95, 0.8, "Bench"]
-    ]
-}
-
-CURRENT_LOCATION = "Main Floor"
 iou_threshold = 0.01
 time_threshold = 2  # how many seconds until machine is sure you are in or out
 
@@ -30,10 +22,37 @@ class UsbCameraMain:
 
         # initialize stations
         self.stations = []
-        for station in CAMERA_MACHINES[CURRENT_LOCATION]:
+        for station in self.get_stations():
             self.stations.append(Machine.Machine(station,
                                                  self.camera_width,
                                                  self.camera_height))
+
+    def get_stations(self):
+        """
+        Retrieves the machines from the JSON file and returns it
+        as a list
+
+        :return: stations: [[name, topX, leftY, bottomX, rightY]]
+        """
+        json_file_location = "./GymnosCamera/gymnoscamera/Machines.json"
+        machine_key = "machines"
+        machine_name_key = "name"
+        topX_key = "topX"
+        leftY_key = "leftY"
+        bottomX_key = "bottomX"
+        rightY_key = "rightY"
+
+        stations = []
+        with open(json_file_location) as json_file:
+            data = json.load(json_file)
+            for machine in data[machine_key]:
+                stations.append([machine[machine_name_key],
+                                 machine[topX_key],
+                                 machine[leftY_key],
+                                 machine[bottomX_key],
+                                 machine[rightY_key]])
+
+        return stations
 
     def run_loop(self):
         """

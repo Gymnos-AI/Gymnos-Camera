@@ -7,7 +7,7 @@ class Machine:
     This class keeps track of machine coordinates and machine usage
     """
     def __init__(self, station, camera_width, camera_height):
-        (top_x, left_y, bottom_x, right_y, name) = self.convert_station_ratios(station,
+        (name, top_x, left_y, bottom_x, right_y) = self.convert_station_ratios(station,
                                                                                camera_width,
                                                                                camera_height)
 
@@ -48,11 +48,11 @@ class Machine:
         :param station:
         :return:
         """
-        a, b, c, d, name = station
+        name, a, b, c, d = station
         w, h = camera_width, camera_height
         top_x, left_y, bottom_x, right_y = int(a * w), int(b * h), int(c * w), int(d * h)
 
-        return top_x, left_y, bottom_x, right_y, name
+        return name, top_x, left_y, bottom_x, right_y
 
     def increment_machine_time(self, person, image):
         """
