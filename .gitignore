@@ -1,0 +1,41 @@
+# Developer environments
+.idea
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+MANIFEST
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IPython Notebook
+.ipynb_checkpoints
+
+# Virtualenv
+venv/
+wvenv/
+ENV/
+
+# Model data
+*.h5
+
+# Node
+node_modules/
