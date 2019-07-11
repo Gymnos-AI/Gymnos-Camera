@@ -7,7 +7,6 @@ import gymnoscamera.Widgets.frame_timer as frame_timer
 
 from gymnoscamera import Machine
 from gymnoscamera import Predictors
-from tkinter import *
 
 iou_threshold = 0.01
 time_threshold = 2  # how many seconds until machine is sure you are in or out
@@ -34,8 +33,6 @@ class UsbCameraMain:
         self.root = tkinter.Tk()
         self.ft = frame_timer.frameTimers(self.root)
         #self.root.update()
-
-
 
     def get_stations(self):
         """
