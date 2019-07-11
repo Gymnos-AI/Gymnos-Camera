@@ -2,9 +2,12 @@
 import cv2
 import numpy as np
 import json
+import tkinter
+import gymnoscamera.Widgets.frame_timer as frame_timer
 
 from gymnoscamera import Machine
 from gymnoscamera import Predictors
+from tkinter import *
 
 iou_threshold = 0.01
 time_threshold = 2  # how many seconds until machine is sure you are in or out
@@ -27,6 +30,13 @@ class UsbCameraMain:
                                                  self.camera_width,
                                                  self.camera_height))
 
+        # initialize the Widgets
+        self.root = tkinter.Tk()
+        self.ft = frame_timer.frameTimers(self.root)
+        #self.root.update()
+
+
+
     def get_stations(self):
         """
         Retrieves the machines from the JSON file and returns it
@@ -34,7 +44,7 @@ class UsbCameraMain:
 
         :return: stations: [[name, topX, leftY, bottomX, rightY]]
         """
-        json_file_location = "./GymnosCamera/gymnoscamera/Machines.json"
+        json_file_location = "./gymnoscamera/Machines.json"
         machine_key = "machines"
         machine_name_key = "name"
         topX_key = "topX"
@@ -72,9 +82,15 @@ class UsbCameraMain:
                 for person in people_coords:
                     # If there is somebody standing in a station
                     station.increment_machine_time(person, image)
+                if(station.name == "squat_rack"):
+                    self.ft.squatTime(station.time_used)
+                elif(station.name == "bench"):
+                    self.ft.benchTime(station.time_used)
 
             image = np.asarray(image)
             cv2.imshow("Video Feed", image)
+            self.root.update()
+
 
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('q'):
