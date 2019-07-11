@@ -78,16 +78,11 @@ class UsbCameraMain:
             for station in self.stations:
                 for person in people_coords:
                     # If there is somebody standing in a station
-                    station.increment_machine_time(person, image)
-                if(station.name == "squat_rack"):
-                    self.ft.squatTime(station.time_used)
-                elif(station.name == "bench"):
-                    self.ft.benchTime(station.time_used)
+                    station.increment_machine_time(person, image, self.ft)
 
             image = np.asarray(image)
             cv2.imshow("Video Feed", image)
             self.root.update()
-
 
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('q'):

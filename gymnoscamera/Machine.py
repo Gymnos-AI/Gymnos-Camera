@@ -17,15 +17,24 @@ class Machine:
         self.left_y = left_y
         self.bottom_x = bottom_x
         self.right_y = right_y
+
         self.iou_threshold = 0.01
         self.time_threshold = 2  # how many seconds until machine is sure you are in or out
+
         self.font = cv2.FONT_HERSHEY_SIMPLEX
+        self.border_colour = self.get_machine_colour()
 
         self.time_used = 0
         self.inside = False
         self.using = False
         self.time_changed = 0
         self.time_elapsed = 0
+
+    def get_machine_colour(self):
+        if self.name == "squat_rack":
+            return (0, 0, 255)
+        else:
+            return (255, 0, 0)
 
     def draw_machine(self, image):
         """
@@ -35,11 +44,11 @@ class Machine:
         :return:
         """
         # display machine areas
-        cv2.rectangle(image, (self.top_x, self.left_y), (self.bottom_x, self.right_y), (0, 255, 0), 1)
-        cv2.putText(image,
-                    self.name + " " + str(self.time_used) + "s",
-                    (self.top_x, int((self.left_y + self.right_y) / 2)),
-                    self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.rectangle(image,
+                      (self.top_x, self.left_y),
+                      (self.bottom_x, self.right_y),
+                      self.border_colour,
+                      1)
 
     def convert_station_ratios(self, station, camera_width, camera_height):
         """
@@ -54,14 +63,14 @@ class Machine:
 
         return name, top_x, left_y, bottom_x, right_y
 
-    def increment_machine_time(self, person, image):
+    def increment_machine_time(self, person, image, time_widget):
         """
         This function checks if a person is using a machine. If
         there is somebody there increment the machine usage time.
 
-        :param person:
-        :param image:
-        :return:
+        :param person: Co-ordinates of a single person
+        :param image: Reference to the frame under prediction
+        :param time_widget: Reference to the frame_timer widget
         """
         (h_top_x, h_left_y, h_bottom_x, h_right_y) = person
 
@@ -72,7 +81,11 @@ class Machine:
         if iou_value > self.iou_threshold:
             # highlight the box if it is being used
             if self.using:
-                cv2.rectangle(image, (self.top_x, self.left_y), (self.bottom_x, self.right_y), (0, 255, 0), 3)
+                cv2.rectangle(image,
+                              (self.top_x, self.left_y),
+                              (self.bottom_x, self.right_y),
+                              self.border_colour,
+                              3)
             if self.inside:
                 diff = time.time() - self.time_changed
                 if diff > self.time_threshold:
@@ -92,6 +105,9 @@ class Machine:
                 if diff > self.time_threshold and self.using:
                     self.using = False
                     self.time_used += time.time() - self.time_elapsed - self.time_threshold
+
+        # Update dashboard
+        time_widget.update_time(self.name, self.time_used)
 
     def calculate_iou(self, boxA, boxB):
         """
