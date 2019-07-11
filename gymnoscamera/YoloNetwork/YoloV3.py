@@ -48,14 +48,14 @@ class YOLO(object):
         self.boxes, self.scores, self.classes = self.generate()
 
     def _get_class(self):
-        classes_path = os.path.expanduser(os.path.join(__file__, "..", self.classes_path))
+        classes_path = os.path.expanduser(os.path.join(os.path.dirname(__file__), self.classes_path))
         with open(classes_path) as f:
             class_names = f.readlines()
         class_names = [c.strip() for c in class_names]
         return class_names
 
     def _get_anchors(self):
-        anchors_path = os.path.expanduser(os.path.join(__file__, "..", self.anchors_path))
+        anchors_path = os.path.expanduser(os.path.join(os.path.dirname(__file__), self.anchors_path))
         with open(anchors_path) as f:
             anchors = f.readline()
         anchors = [float(x) for x in anchors.split(',')]
