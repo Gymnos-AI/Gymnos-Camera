@@ -32,9 +32,9 @@ class Machine:
 
     def get_machine_colour(self):
         if self.name == "squat_rack":
-            return (0, 0, 255)
+            return 0, 0, 255
         else:
-            return (255, 0, 0)
+            return 255, 0, 0
 
     def draw_machine(self, image):
         """
@@ -53,8 +53,10 @@ class Machine:
     def convert_station_ratios(self, station, camera_width, camera_height):
         """
         This function converts station ratios to real pixel values
-
         :param station:
+        :param camera_height:
+        :param camera_width:
+
         :return:
         """
         name, a, b, c, d = station
@@ -109,32 +111,32 @@ class Machine:
         # Update dashboard
         time_widget.update_time(self.name, self.time_used)
 
-    def calculate_iou(self, boxA, boxB):
+    def calculate_iou(self, box_a, box_b):
         """
         Computes the intersection over union value between two boxes
 
-        :param boxA:
-        :param boxB:
+        :param box_a:
+        :param box_b:
         :return:
         """
         # determine the (x, y)-coordinates of the intersection rectangle
-        xA = max(boxA[0], boxB[0])
-        yA = max(boxA[1], boxB[1])
-        xB = min(boxA[2], boxB[2])
-        yB = min(boxA[3], boxB[3])
+        x_a = max(box_a[0], box_b[0])
+        y_a = max(box_a[1], box_b[1])
+        x_b = min(box_a[2], box_b[2])
+        y_b = min(box_a[3], box_b[3])
 
         # compute the area of intersection rectangle
-        interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+        inter_area = max(0, x_b - x_a + 1) * max(0, y_b - y_a + 1)
 
         # compute the area of both the prediction and ground-truth
         # rectangles
-        boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
-        boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
+        box_a_area = (box_a[2] - box_a[0] + 1) * (box_a[3] - box_a[1] + 1)
+        box_b_area = (box_b[2] - box_b[0] + 1) * (box_b[3] - box_b[1] + 1)
 
         # compute the intersection over union by taking the intersection
         # area and dividing it by the sum of prediction + ground-truth
         # areas - the intersection area
-        iou = interArea / float(boxAArea + boxBArea - interArea)
+        iou = inter_area / float(box_a_area + box_b_area - inter_area)
 
         # return the intersection over union value
         # print(iou)

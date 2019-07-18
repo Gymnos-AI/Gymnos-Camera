@@ -4,6 +4,16 @@ Library for camera and predictions
 
 ## Development
 
+### Running
+
+To run this library standalone:
+
+```bash
+run_camera.py --model path/to/yolo.h5 --usbcam
+```
+
+### Installation
+
 To install this library with local changes:
 
 ```bash

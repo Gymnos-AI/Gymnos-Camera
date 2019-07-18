@@ -1,6 +1,6 @@
 # Continuously capture frames and perform object detection on them
 import cv2
-import gymnoscamera.YoloNetwork.YoloV3 as yolo
+import gymnoscamera.yolo_network.yolo_v3 as yolo
 import numpy as np
 from timeit import default_timer as timer
 
@@ -33,9 +33,9 @@ class Predictors:
         """
         Before you run the YOLO Detector, download the models from:
         https://drive.google.com/drive/folders/1fibgr4c2CUMItWOngjTxwhqSzsHXBXvT
-        and place it into /GymnosCamera/YoloNetwork/model_data
+        and place it in a location that you will provide as an argument to run_camera.py
 
-        :param to_predict: frame we would like to run prediction on
+        :param to_predict: The frame we would like to run prediction on
         :return:
         """
         return np.asarray(self.model.detect_image(to_predict))

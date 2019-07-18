@@ -11,7 +11,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras.regularizers import l2
 
-from gymnoscamera.YoloNetwork.utils import compose
+from gymnoscamera.yolo_network.utils import compose
 
 
 @wraps(Conv2D)

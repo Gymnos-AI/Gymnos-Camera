@@ -4,17 +4,16 @@ Class definition of YOLO_v3 style detection model on image and video
 """
 
 import colorsys
-import urllib.request
+import os
 from timeit import default_timer as timer
 
 import numpy as np
 from keras import backend as K
-from keras.models import load_model
 from keras.layers import Input
-
-from gymnoscamera.YoloNetwork.model import yolo_eval, yolo_body, tiny_yolo_body
-import os
+from keras.models import load_model
 from keras.utils import multi_gpu_model
+
+from gymnoscamera.yolo_network.model import yolo_eval, yolo_body, tiny_yolo_body
 
 
 class YOLO(object):

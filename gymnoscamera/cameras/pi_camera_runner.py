@@ -1,30 +1,31 @@
-# import the necessary packages
-from picamera.array import PiRGBArray
-from picamera import PiCamera
-import cv2
 import time
-from gymnoscamera import Predictors
+
+import cv2
+from picamera import PiCamera
+from picamera.array import PiRGBArray
+
+from gymnoscamera.cameras.camera import Camera
 
 
-class PiCameraMain:
+class PiCameraRunner(Camera):
+    """
+    An implementation of a Camera runner which sources its camera from a Pi Camera
+    """
     def __init__(self, model_path: str):
+        super().__init__(model_path)
+
         # initialize the HOG descriptor/person detector
-        self.IM_WIDTH = 128
-        self.IM_HEIGHT = 128
         self.camera = PiCamera()
-        self.rawCapture = PiRGBArray(self.camera, size=(self.IM_WIDTH, self.IM_HEIGHT))
-        self.camera.resolution = (self.IM_WIDTH, self.IM_HEIGHT)
+        self.rawCapture = PiRGBArray(self.camera, size=(self.camera_width, self.camera_height))
+        self.camera.resolution = (self.camera_width, self.camera_height)
         self.camera.framerate = 32
 
         # allow the camera to warm up
         time.sleep(0.1)
 
-        # initialize the Predictors
-        self.predictor = Predictors.Predictors('YOLOV3', model_path)
-
     def run_loop(self):
         """
-        This main loop will grab frames the camera and print it onto the screen
+        This main loop will grab frames from the camera and print it onto the screen
         """
         # capture frames from the camera
         for frame in self.camera.capture_continuous(self.rawCapture, format="bgr", use_video_port=True):
