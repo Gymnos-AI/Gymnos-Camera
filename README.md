@@ -49,11 +49,11 @@ Choose which repository to upload to:
 
 1) Stable (cannot overwrite uploaded versions!)
     ```bash
-    use http://thefirstjedi.asuscomm.com:3141/gymnos/stable
+    devpi use http://thefirstjedi.asuscomm.com:3141/gymnos/stable
     ```
 2) Staging (can overwrite uploaded versions)
     ```bash
-    use http://thefirstjedi.asuscomm.com:3141/gymnos/staging
+    devpi use http://thefirstjedi.asuscomm.com:3141/gymnos/staging
     ```
 
 Login as user 'gymnos' (see google drive 'Shared Credentials' for password)
