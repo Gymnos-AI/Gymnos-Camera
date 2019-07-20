@@ -1,4 +1,3 @@
-import time
 import cv2
 
 
@@ -27,7 +26,7 @@ class Machine:
         self.time_used = 0
         self.inside = False
         self.using = False
-        self.time_changed = 0
+        self.first_detected = 0
         self.time_elapsed = 0
 
     def get_machine_colour(self):
@@ -43,12 +42,24 @@ class Machine:
         :param image:
         :return:
         """
-        # display machine areas
-        cv2.rectangle(image,
-                      (self.top_x, self.left_y),
-                      (self.bottom_x, self.right_y),
-                      self.border_colour,
-                      1)
+        if self.using:
+            cv2.rectangle(image,
+                          (self.top_x, self.left_y),
+                          (self.bottom_x, self.right_y),
+                          (0, 255, 0),
+                          3)
+        elif self.inside:
+            cv2.rectangle(image,
+                          (self.top_x, self.left_y),
+                          (self.bottom_x, self.right_y),
+                          self.border_colour,
+                          3)
+        else:
+            cv2.rectangle(image,
+                          (self.top_x, self.left_y),
+                          (self.bottom_x, self.right_y),
+                          self.border_colour,
+                          1)
 
     def convert_station_ratios(self, station, camera_width, camera_height):
         """
@@ -65,48 +76,49 @@ class Machine:
 
         return name, top_x, left_y, bottom_x, right_y
 
-    def increment_machine_time(self, person, image, time_widget):
+    def increment_machine_time(self, people, image, image_cap_time,time_widget):
         """
         This function checks if a person is using a machine. If
         there is somebody there increment the machine usage time.
 
         :param person: Co-ordinates of a single person
         :param image: Reference to the frame under prediction
+        :param image_cap_time: The exact time the image was captured on
         :param time_widget: Reference to the frame_timer widget
         """
-        (h_top_x, h_left_y, h_bottom_x, h_right_y) = person
+        highest_iou_value = 0
+        # Find out if there is at least one person using the machine
+        for person in people:
+            (h_top_x, h_left_y, h_bottom_x, h_right_y) = person
 
-        iou_value = self.calculate_iou((self.top_x, self.left_y, self.bottom_x, self.right_y),
-                                       (h_top_x, h_left_y, h_bottom_x, h_right_y))
+            iou_value = self.calculate_iou((self.top_x, self.left_y, self.bottom_x, self.right_y),
+                                           (h_top_x, h_left_y, h_bottom_x, h_right_y))
+
+            if iou_value > highest_iou_value:
+                highest_iou_value = iou_value
 
         # if there is somebody in the machine
-        if iou_value > self.iou_threshold:
-            # highlight the box if it is being used
-            if self.using:
-                cv2.rectangle(image,
-                              (self.top_x, self.left_y),
-                              (self.bottom_x, self.right_y),
-                              self.border_colour,
-                              3)
-            if self.inside:
-                diff = time.time() - self.time_changed
+        if highest_iou_value > self.iou_threshold:
+            if self.inside is False:
+                self.inside = True
+                self.first_detected = image_cap_time
+            elif self.inside and not self.using:
+                diff = image_cap_time - self.first_detected
+                # If they have been using this machine for a set period
+                # of time, we can be sure the machine is in use
                 if diff > self.time_threshold:
                     self.using = True
-                    self.time_elapsed = self.time_changed
-            else:
-                self.inside = True
-                self.time_changed = time.time()
+                    self.time_elapsed = self.first_detected
         else:
-            # turn off machine flag
+            # Turn off all flags if they are set
             if self.inside:
                 self.inside = False
-                self.time_changed = time.time()
-            # update the time used
-            else:
-                diff = time.time() - self.time_changed
-                if diff > self.time_threshold and self.using:
+
+                # if machine was being used log that time
+                if self.using:
                     self.using = False
-                    self.time_used += time.time() - self.time_elapsed - self.time_threshold
+                    self.time_used += image_cap_time - self.first_detected
+                    print("Used for: " + str(image_cap_time - self.first_detected))
 
         # Update dashboard
         time_widget.update_time(self.name, self.time_used)
