@@ -2,6 +2,8 @@ import json
 import os
 import tkinter
 from abc import ABC
+import time
+import numpy as np
 
 import cv2
 
@@ -62,11 +64,48 @@ class Camera(ABC):
 
     def run_loop(self):
         """
-        This main loop will grab frames the camera and print it onto the screen
+        This main loop tracks machine usage
+        """
+        while True:
+            # Retrieve a frame and timestamp it
+            image = self.get_frame()
+            frame_cap_time = self.get_time()
+
+            # Draw machines and users
+            self.draw_machines(image)
+            people_coords = self.draw_people(image)
+
+            # Calculate station usage
+            for station in self.stations:
+                station.increment_machine_time(people_coords, image, frame_cap_time, self.ft)
+
+            image = np.asarray(image)
+            cv2.imshow("Video Feed", image)
+            self.root.update()
+
+            # Press 'q' to quit
+            if cv2.waitKey(1) == ord('q'):
+                break
+
+    def get_time(self):
+        """
+        Retrieves the time in seconds since epoch
+        """
+        return time.time()
+
+    def get_frame(self):
+        """
+        Retrieves a frames from the camera and returns it
         """
         pass
 
     def draw_people(self, image):
+        """
+        Draws bounding boxes around each person located
+
+        :param image: frame we will run predictions on
+        :return: list of the coordinates of each person our model detects
+        """
         list_of_coords = self.predictor.yolo_v3_detector(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
             cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
@@ -74,6 +113,8 @@ class Camera(ABC):
         return list_of_coords
 
     def draw_machines(self, image):
-        # Calculate station usage
+        """
+        Draws bounding boxes around each station
+        """
         for station in self.stations:
             station.draw_machine(image)

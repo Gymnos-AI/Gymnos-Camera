@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 
 from gymnoscamera.cameras.camera import Camera
 
@@ -17,29 +16,11 @@ class UsbCameraRunner(Camera):
         # initialize the camera
         self.camera = cv2.VideoCapture(0)
 
-    def run_loop(self):
+    def get_frame(self):
         """
-        This main loop will grab frames from the camera and print it onto the screen
+        Retrieves a frames from the camera and returns it
         """
-        while True:
-            # Retrieve frame from camera
-            ret, image = self.camera.read()
-            image = cv2.resize(image, (self.camera_height, self.camera_width))
+        ret, image = self.camera.read()
+        image = cv2.resize(image, (self.camera_height, self.camera_width))
 
-            # Draw machines and users
-            self.draw_machines(image)
-            people_coords = self.draw_people(image)
-
-            # Calculate station usage
-            for station in self.stations:
-                for person in people_coords:
-                    # If there is somebody standing in a station
-                    station.increment_machine_time(person, image, self.ft)
-
-            image = np.asarray(image)
-            cv2.imshow("Video Feed", image)
-            self.root.update()
-
-            # Press 'q' to quit
-            if cv2.waitKey(1) == ord('q'):
-                break
+        return image
