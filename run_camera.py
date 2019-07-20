@@ -2,6 +2,7 @@ import argparse
 import os
 
 from gymnoscamera.cameras import camera_factory
+from gymnoscamera.cameras import CalibrateCam
 
 
 def parse_args():
@@ -36,7 +37,10 @@ def main():
     camera = camera_factory.factory.get_camera(camera_type, model_path)
 
     if args.configure:
-        raise ValueError('configure not implemented')
+        # raise ValueError('configure not implemented')
+        image = camera.get_frame()
+        calibrate = CalibrateCam.CalibrateCam(image)
+        calibrate.main()
     else:
         camera.run_loop()
 
