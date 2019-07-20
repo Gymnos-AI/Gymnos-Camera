@@ -7,9 +7,8 @@ import tkinter as tk
 
 # a list of Machine Names to chose from
 OPTIONS = [
-    "Bench",
-    "Squat",
-    "JJ Reddick"
+    "bench",
+    "squat_rack"
 ]  # etc
 
 
@@ -20,7 +19,7 @@ class CalibrateCam:
         self.drawing = False
         self.machines_container = {"machines": []}
 
-        #self.img = cv2.imread(image, -1)
+        # self.img = cv2.imread(image, -1)
         self.img = image
         cv2.namedWindow('Cam View')
         cv2.setMouseCallback('Cam View', self.draw_rectangle)
@@ -35,7 +34,7 @@ class CalibrateCam:
                 self.drawing = False
                 self.p2 = (x, y)
                 machineName = self.popup_msg()
-                #machines.append((p1, p2, machineName))
+                # machines.append((p1, p2, machineName))
                 self.machines_container["machines"].append(
                     {"name": machineName, "topX": self.p1[0], "leftY": self.p1[1], "bottomX": self.p2[0], "rightY": self.p2[1]})
 
@@ -77,9 +76,9 @@ class CalibrateCam:
         while(1):
 
             #!!!! NEEDS WORK
-            #img_temp = cv2.imread(self.img, -1)
+            # img_temp = cv2.imread(self.img, -1)
             img_temp = self.img
-            #img_temp = cv2.resize(self.img, (0, 0), fx=0.5, fy=0.5)
+            img_temp = cv2.resize(self.img, (0, 0), fx=1, fy=1)
 
             if self.p1 and self.p2:
                 cv2.rectangle(img_temp, self.p1, self.p2, (0, 255, 0), 2)
@@ -101,7 +100,7 @@ class CalibrateCam:
                 break
 
         cv2.destroyAllWindows()
-        with open('data.json', 'w') as outfile:
+        with open('./gymnoscamera/Machines.json', 'w') as outfile:
             json.dump(self.machines_container, outfile)
 
 
