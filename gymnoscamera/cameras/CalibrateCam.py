@@ -5,27 +5,43 @@ import json
 from tkinter import *
 import tkinter as tk
 
-# a list of Machine Names to chose from
-OPTIONS = [
-    "bench",
-    "squat_rack"
-]
-
 
 class CalibrateCam:
     def __init__(self, camera, using_mac):
-        self.p1 = (0, 0)
-        self.p2 = (0, 0)
-        self.drawing = False
-        self.machines_container = {"machines": []}
+        # Constants
         self.using_mac = using_mac
 
         # reference to camera
         self.camera = camera
+
+        self.OPTIONS = [
+            "bench",
+            "squat_rack"
+        ]
+        self.json_location = "./gymnoscamera/Machines.json"
+        self.pop_title = "Options"
+        self.popup_dimensions = "100x100"
+        self.annotation_colour = (0, 255, 0)  # RGB
+
+        # Keys to accessing and storing into the Json File
+        self.machines = "machines"
+        self.name = "name"
+        self.top_x = "topX"
+        self.left_y = "leftY"
+        self.bottom_x = "bottomX"
+        self.right_y = "rightY"
+
+        self.drawing = False
+        self.machines_container = {"machines": []}
+        self.p1 = (0, 0)
+        self.p2 = (0, 0)
         cv2.namedWindow('Cam View')
         cv2.setMouseCallback('Cam View', self.draw_rectangle)
 
     def draw_rectangle(self, event, x, y, flags, param):
+        """
+        Event handler that draws the rectangle on users click
+        """
         if event == cv2.EVENT_LBUTTONDOWN:
             if self.drawing is False:
                 self.drawing = True
@@ -40,44 +56,59 @@ class CalibrateCam:
                 else:
                     machine_name = self.popup_msg()
 
-                self.machines_container["machines"].append(
-                    {"name": machine_name,
-                     "topX": self.p1[0],
-                     "leftY": self.p1[1],
-                     "bottomX": self.p2[0],
-                     "rightY": self.p2[1]})
+                self.machines_container[self.machines].append(
+                    {self.name: machine_name,
+                     self.top_x: self.p1[0],
+                     self.left_y: self.p1[1],
+                     self.bottom_x: self.p2[0],
+                     self.right_y: self.p2[1]})
 
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.drawing is True:
                 self.p2 = (x, y)
 
-    def convert_to_ratios(self):
+    def write_json(self):
+        """
+        Writes machine locations that the user chose into the json file
+        """
+        # first convert all raw pixel values into their ratios
+        # this helps with dealing with variable sizing
         camera_width, camera_height = self.camera.get_dimensions()
-        for points in self.machines_container["machines"]:
-            points["topX"] = int(points["topX"]) / camera_width
-            points["leftY"] = int(points["leftY"]) / camera_height
-            points["bottomX"] = int(points["bottomX"]) / camera_width
-            points["rightY"] = int(points["rightY"]) / camera_height
+        for points in self.machines_container[self.machines]:
+            points[self.top_x] = int(points[self.top_x]) / camera_width
+            points[self.left_y] = int(points[self.left_y]) / camera_height
+            points[self.bottom_x] = int(points[self.bottom_x]) / camera_width
+            points[self.right_y] = int(points[self.right_y]) / camera_height
+
+        with open(self.json_location, 'w') as outfile:
+            json.dump(self.machines_container, outfile)
 
     def remove_machine(self):
-        if self.machines_container["machines"]:
-            self.machines_container["machines"].pop()
+        """
+        Handles the removal of the machine from the list of machines
+        """
+        if self.machines_container[self.machines]:
+            self.machines_container[self.machines].pop()
 
     def popup_msg(self):
+        """
+        Shows a drop down option menu for users to choose between a
+        set list of possible machines.
+        """
         popup = tk.Tk()
-        popup.wm_title("!")
+        popup.wm_title(self.pop_title)
 
-        popup.geometry('100x100')
+        popup.geometry(self.popup_dimensions)
 
         variable = StringVar(popup)
-        variable.set(OPTIONS[0])  # default value
+        variable.set(self.OPTIONS[0])  # default value
 
         def get_machine():
             print("Machine name: " + variable.get())
             popup.destroy()
             return variable.get()
 
-        w = OptionMenu(popup, variable, *OPTIONS)
+        w = OptionMenu(popup, variable, *self.OPTIONS)
         w.pack()
 
         button = Button(popup, text="OK",
@@ -88,18 +119,31 @@ class CalibrateCam:
         return variable.get()
 
     def main(self):
-        while(1):
+        while True:
             img = self.camera.get_frame()
             img_temp = img
 
             if self.p1 and self.p2:
-                cv2.rectangle(img_temp, self.p1, self.p2, (0, 255, 0), 2)
+                cv2.rectangle(img_temp, self.p1, self.p2, self.annotation_colour, 2)
 
-            for points in self.machines_container["machines"]:
-                cv2.rectangle(img_temp, (points["topX"], points["leftY"]), (
-                    points["bottomX"], points["rightY"]), (0, 255, 0), 2)
-                cv2.putText(img_temp, points["name"], (points["topX"], points["leftY"] - 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+            for points in self.machines_container[self.machines]:
+                cv2.rectangle(img_temp,
+                              (points[self.top_x],
+                               points[self.left_y]),
+                              (points[self.bottom_x],
+                               points[self.right_y]),
+                              self.annotation_colour,
+                              2)
+
+                cv2.putText(img_temp,
+                            points[self.name],
+                            (points[self.top_x],
+                             points[self.right_y] - 5),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1,
+                            self.annotation_colour,
+                            2,
+                            cv2.LINE_AA)
 
             cv2.imshow('Cam View', img_temp)
 
@@ -112,6 +156,4 @@ class CalibrateCam:
                 break
 
         cv2.destroyAllWindows()
-        self.convert_to_ratios()
-        with open('./gymnoscamera/Machines.json', 'w') as outfile:
-            json.dump(self.machines_container, outfile)
+        self.write_json()
