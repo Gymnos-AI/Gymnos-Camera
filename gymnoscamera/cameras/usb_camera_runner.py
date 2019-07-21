@@ -1,4 +1,5 @@
 import cv2
+import time
 
 from gymnoscamera.cameras.camera import Camera
 
@@ -15,6 +16,7 @@ class UsbCameraRunner(Camera):
 
         # initialize the camera
         self.camera = cv2.VideoCapture(0)
+        time.sleep(0.1)  # allow the camera to warm up
 
     def get_frame(self):
         """

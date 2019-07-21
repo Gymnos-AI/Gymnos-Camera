@@ -27,7 +27,6 @@ class Camera(ABC):
 
         # initialize stations
         self.stations = []
-        self.set_stations()
 
     def set_stations(self):
         for station in self.get_stations():
@@ -62,6 +61,14 @@ class Camera(ABC):
 
         return stations
 
+    def get_dimensions(self):
+        """
+        Returns width and height of the camera
+
+        :return: (width, height)
+        """
+        return self.camera_width, self.camera_height
+
     def run_loop(self):
         """
         This main loop tracks machine usage
@@ -69,6 +76,7 @@ class Camera(ABC):
         # initialize the Widgets
         root = tkinter.Tk()
         ft = frame_timer.frameTimers(root)
+        self.set_stations()
         while True:
             # Retrieve a frame and timestamp it
             image = self.get_frame()

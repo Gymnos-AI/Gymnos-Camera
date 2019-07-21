@@ -39,8 +39,7 @@ def main():
     camera = camera_factory.factory.get_camera(camera_type, model_path)
 
     if args.configure:
-        image = camera.get_frame()
-        calibrate = CalibrateCam.CalibrateCam(image, args.mac)
+        calibrate = CalibrateCam.CalibrateCam(camera, args.mac)
         calibrate.main()
     else:
         camera.run_loop()

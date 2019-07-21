@@ -9,18 +9,19 @@ import tkinter as tk
 OPTIONS = [
     "bench",
     "squat_rack"
-]  # etc
+]
 
 
 class CalibrateCam:
-    def __init__(self, image, using_mac):
+    def __init__(self, camera, using_mac):
         self.p1 = (0, 0)
         self.p2 = (0, 0)
         self.drawing = False
         self.machines_container = {"machines": []}
         self.using_mac = using_mac
 
-        self.img = image
+        # reference to camera
+        self.camera = camera
         cv2.namedWindow('Cam View')
         cv2.setMouseCallback('Cam View', self.draw_rectangle)
 
@@ -33,27 +34,30 @@ class CalibrateCam:
             else:
                 self.drawing = False
                 self.p2 = (x, y)
-                machine_name = ""
                 if self.using_mac:
-                    print("GUI not supported on Mac")
+                    print("GUI not supported on Mac, please enter machine name through command line")
                     machine_name = input("Machine name: ")
                 else:
                     machine_name = self.popup_msg()
 
                 self.machines_container["machines"].append(
-                    {"name": machine_name, "topX": self.p1[0], "leftY": self.p1[1], "bottomX": self.p2[0], "rightY": self.p2[1]})
+                    {"name": machine_name,
+                     "topX": self.p1[0],
+                     "leftY": self.p1[1],
+                     "bottomX": self.p2[0],
+                     "rightY": self.p2[1]})
 
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.drawing is True:
                 self.p2 = (x, y)
 
     def convert_to_ratios(self):
+        camera_width, camera_height = self.camera.get_dimensions()
         for points in self.machines_container["machines"]:
-            points["topX"] = int(points["topX"]) / 256
-            points["leftY"] = int(points["leftY"]) / 256
-            points["bottomX"] = int(points["bottomX"]) / 256
-            points["rightY"] = int(points["rightY"]) / 256
-
+            points["topX"] = int(points["topX"]) / camera_width
+            points["leftY"] = int(points["leftY"]) / camera_height
+            points["bottomX"] = int(points["bottomX"]) / camera_width
+            points["rightY"] = int(points["rightY"]) / camera_height
 
     def remove_machine(self):
         if self.machines_container["machines"]:
@@ -85,11 +89,8 @@ class CalibrateCam:
 
     def main(self):
         while(1):
-
-            #!!!! NEEDS WORK
-            # img_temp = cv2.imread(self.img, -1)
-            img_temp = self.img
-            img_temp = cv2.resize(self.img, (0, 0), fx=1, fy=1)
+            img = self.camera.get_frame()
+            img_temp = img
 
             if self.p1 and self.p2:
                 cv2.rectangle(img_temp, self.p1, self.p2, (0, 255, 0), 2)

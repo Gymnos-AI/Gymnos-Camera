@@ -19,8 +19,7 @@ class PiCameraRunner(Camera):
         self.camera.resolution = (self.camera_width, self.camera_height)
         self.camera.framerate = 32
 
-        # allow the camera to warm up
-        time.sleep(0.1)
+        time.sleep(0.1)  # allow the camera to warm up
 
     def get_frame(self):
         """
