@@ -13,13 +13,13 @@ OPTIONS = [
 
 
 class CalibrateCam:
-    def __init__(self, image):
+    def __init__(self, image, using_mac):
         self.p1 = (0, 0)
         self.p2 = (0, 0)
         self.drawing = False
         self.machines_container = {"machines": []}
+        self.using_mac = using_mac
 
-        # self.img = cv2.imread(image, -1)
         self.img = image
         cv2.namedWindow('Cam View')
         cv2.setMouseCallback('Cam View', self.draw_rectangle)
@@ -33,21 +33,32 @@ class CalibrateCam:
             else:
                 self.drawing = False
                 self.p2 = (x, y)
-                machineName = self.popup_msg()
-                # machines.append((p1, p2, machineName))
+                if self.using_mac:
+                    print("GUI not supported on Mac")
+                    machine_name = input("Machine name: ")
+                else:
+                    machine_name = self.popup_msg()
+
                 self.machines_container["machines"].append(
-                    {"name": machineName, "topX": self.p1[0], "leftY": self.p1[1], "bottomX": self.p2[0], "rightY": self.p2[1]})
+                    {"name": machine_name, "topX": self.p1[0], "leftY": self.p1[1], "bottomX": self.p2[0], "rightY": self.p2[1]})
 
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.drawing is True:
                 self.p2 = (x, y)
+
+    def convert_to_ratios(self):
+        for points in self.machines_container["machines"]:
+            points["topX"] = int(points["topX"]) / 256
+            points["leftY"] = int(points["leftY"]) / 256
+            points["bottomX"] = int(points["bottomX"]) / 256
+            points["rightY"] = int(points["rightY"]) / 256
+
 
     def remove_machine(self):
         if self.machines_container["machines"]:
             self.machines_container["machines"].pop()
 
     def popup_msg(self):
-
         popup = tk.Tk()
         popup.wm_title("!")
 
@@ -56,7 +67,6 @@ class CalibrateCam:
         variable = StringVar(popup)
         variable.set(OPTIONS[0])  # default value
 
-        # NEEDS WORK
         def get_machine():
             print("Machine name: " + variable.get())
             popup.destroy()
@@ -100,9 +110,6 @@ class CalibrateCam:
                 break
 
         cv2.destroyAllWindows()
+        self.convert_to_ratios()
         with open('./gymnoscamera/Machines.json', 'w') as outfile:
             json.dump(self.machines_container, outfile)
-
-
-# a = CalibrateCam()
-# a.main()

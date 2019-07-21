@@ -14,6 +14,8 @@ def parse_args():
                         action='store', required=True)
     parser.add_argument('--usbcam', help='Use a USB webcam instead of picamera',
                         action='store_true')
+    parser.add_argument('--mac', help='Using a mac',
+                        action='store_true')
 
     return parser.parse_args()
 
@@ -37,9 +39,8 @@ def main():
     camera = camera_factory.factory.get_camera(camera_type, model_path)
 
     if args.configure:
-        # raise ValueError('configure not implemented')
         image = camera.get_frame()
-        calibrate = CalibrateCam.CalibrateCam(image)
+        calibrate = CalibrateCam.CalibrateCam(image, args.mac)
         calibrate.main()
     else:
         camera.run_loop()

@@ -27,6 +27,9 @@ class Camera(ABC):
 
         # initialize stations
         self.stations = []
+        self.set_stations()
+
+    def set_stations(self):
         for station in self.get_stations():
             self.stations.append(machine.Machine(station,
                                                  self.camera_width,
