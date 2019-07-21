@@ -37,7 +37,6 @@ def main():
     camera = camera_factory.factory.get_camera(camera_type, model_path)
 
     if args.configure:
-        # raise ValueError('configure not implemented')
         image = camera.get_frame()
         calibrate = CalibrateCam.CalibrateCam(image)
         calibrate.main()

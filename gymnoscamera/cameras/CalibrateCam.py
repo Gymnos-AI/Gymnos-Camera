@@ -9,7 +9,7 @@ import tkinter as tk
 OPTIONS = [
     "bench",
     "squat_rack"
-]  # etc
+]
 
 
 class CalibrateCam:
@@ -19,7 +19,6 @@ class CalibrateCam:
         self.drawing = False
         self.machines_container = {"machines": []}
 
-        # self.img = cv2.imread(image, -1)
         self.img = image
         cv2.namedWindow('Cam View')
         cv2.setMouseCallback('Cam View', self.draw_rectangle)
@@ -34,7 +33,6 @@ class CalibrateCam:
                 self.drawing = False
                 self.p2 = (x, y)
                 machineName = self.popup_msg()
-                # machines.append((p1, p2, machineName))
                 self.machines_container["machines"].append(
                     {"name": machineName, "topX": self.p1[0], "leftY": self.p1[1], "bottomX": self.p2[0], "rightY": self.p2[1]})
 
@@ -56,7 +54,6 @@ class CalibrateCam:
         variable = StringVar(popup)
         variable.set(OPTIONS[0])  # default value
 
-        # NEEDS WORK
         def get_machine():
             print("Machine name: " + variable.get())
             popup.destroy()
@@ -75,8 +72,6 @@ class CalibrateCam:
     def main(self):
         while(1):
 
-            #!!!! NEEDS WORK
-            # img_temp = cv2.imread(self.img, -1)
             img_temp = self.img
             img_temp = cv2.resize(self.img, (0, 0), fx=1, fy=1)
 
@@ -102,7 +97,3 @@ class CalibrateCam:
         cv2.destroyAllWindows()
         with open('./gymnoscamera/Machines.json', 'w') as outfile:
             json.dump(self.machines_container, outfile)
-
-
-# a = CalibrateCam()
-# a.main()
