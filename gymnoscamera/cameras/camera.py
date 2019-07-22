@@ -27,13 +27,12 @@ class Camera(ABC):
 
         # initialize stations
         self.stations = []
+
+    def set_stations(self):
         for station in self.get_stations():
             self.stations.append(machine.Machine(station,
                                                  self.camera_width,
                                                  self.camera_height))
-        # initialize the Widgets
-        self.root = tkinter.Tk()
-        self.ft = frame_timer.frameTimers(self.root)
 
     def get_stations(self):
         """
@@ -62,10 +61,22 @@ class Camera(ABC):
 
         return stations
 
+    def get_dimensions(self):
+        """
+        Returns width and height of the camera
+
+        :return: (width, height)
+        """
+        return self.camera_width, self.camera_height
+
     def run_loop(self):
         """
         This main loop tracks machine usage
         """
+        # initialize the Widgets
+        root = tkinter.Tk()
+        ft = frame_timer.frameTimers(root)
+        self.set_stations()
         while True:
             # Retrieve a frame and timestamp it
             image = self.get_frame()
@@ -77,11 +88,11 @@ class Camera(ABC):
 
             # Calculate station usage
             for station in self.stations:
-                station.increment_machine_time(people_coords, image, frame_cap_time, self.ft)
+                station.increment_machine_time(people_coords, image, frame_cap_time, ft)
 
             image = np.asarray(image)
             cv2.imshow("Video Feed", image)
-            self.root.update()
+            root.update()
 
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('q'):
