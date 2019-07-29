@@ -81,7 +81,7 @@ class CalibrateCam:
             points[self.right_y] = int(points[self.right_y]) / camera_height
 
         with open(self.json_location, 'w') as outfile:
-            json.dump(self.machines_container, outfile)
+            json.dump(self.machines_container, outfile, indent=4)
 
     def remove_machine(self):
         """
