@@ -23,6 +23,10 @@ or (if you are in a different directory)
 ```bash
 pip install -e path/to/GymnosCamera
 ```
+or if you want the distribution from the server
+```
+pip install --trusted-host thefirstjedi.asuscomm.com --index-url http://thefirstjedi.asuscomm.com:3141/gymnos/staging/+simple distribution==version
+```
 
 To uninstall this library, simply run `pip uninstall gymnoscamera`
 
