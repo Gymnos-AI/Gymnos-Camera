@@ -13,7 +13,7 @@ from gymnoscamera.Widgets import frame_timer
 
 class Camera(ABC):
 
-    def __init__(self, model_path: str):
+    def __init__(self, db, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
@@ -28,9 +28,11 @@ class Camera(ABC):
         # initialize stations
         self.stations = []
 
+        self.db = db
+
     def set_stations(self):
         for station in self.get_stations():
-            self.stations.append(machine.Machine(station,
+            self.stations.append(machine.Machine(self.db, station,
                                                  self.camera_width,
                                                  self.camera_height))
 
@@ -41,23 +43,31 @@ class Camera(ABC):
 
         :return: stations: [[name, topX, leftY, bottomX, rightY]]
         """
-        json_file_location = "../Machines.json"
-        machine_key = "machines"
-        machine_name_key = "name"
-        top_x_key = "topX"
-        left_y_key = "leftY"
-        bottom_x_key = "bottomX"
-        right_y_key = "rightY"
+        json_file_location = "../gym_info.json"
+        gym_id_key = "GymID"
+        machine_key = "Machines"
+        machine_id_key = "MachineID"
+        machine_name_key = "Name"
+        machine_location_key = "Location"
+        top_x_key = "TopX"
+        left_y_key = "LeftY"
+        bottom_x_key = "BottomX"
+        right_y_key = "RightY"
 
         stations = []
         with open(os.path.join(os.path.dirname(__file__), json_file_location)) as json_file:
             data = json.load(json_file)
+            gym_id = data[gym_id_key]
             for machine in data[machine_key]:
-                stations.append([machine[machine_name_key],
-                                 machine[top_x_key],
-                                 machine[left_y_key],
-                                 machine[bottom_x_key],
-                                 machine[right_y_key]])
+                locations = machine[machine_location_key]
+                machine_id = machine[machine_id_key]
+                stations.append([gym_id,
+                                 machine_id,
+                                 machine[machine_name_key],
+                                 locations[top_x_key],
+                                 locations[left_y_key],
+                                 locations[bottom_x_key],
+                                 locations[right_y_key]])
 
         return stations
 

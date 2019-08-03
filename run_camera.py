@@ -4,6 +4,16 @@ import os
 from gymnoscamera.cameras import camera_factory
 from gymnoscamera.cameras import CalibrateCam
 
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+
+# Initialize the database connection
+# Use a service account to connect to the databse
+cred = credentials.Certificate('./serviceAccount.json')
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -36,10 +46,10 @@ def main():
     model_path = os.path.abspath(args.model)
 
     # Get the selected camera
-    camera = camera_factory.factory.get_camera(camera_type, model_path)
+    camera = camera_factory.factory.get_camera(db, camera_type, model_path)
 
     if args.configure:
-        calibrate = CalibrateCam.CalibrateCam(camera, args.mac)
+        calibrate = CalibrateCam.CalibrateCam(db, camera, args.mac)
         calibrate.main()
     else:
         camera.run_loop()

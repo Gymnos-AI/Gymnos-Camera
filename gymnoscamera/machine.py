@@ -1,16 +1,21 @@
 import cv2
+import gymnos_firestore.Machines as machines
 
 
 class Machine:
     """
     This class keeps track of machine coordinates and machine usage
     """
-    def __init__(self, station, camera_width, camera_height):
-        (name, top_x, left_y, bottom_x, right_y) = self.convert_station_ratios(station,
-                                                                               camera_width,
-                                                                               camera_height)
-
+    def __init__(self, db, station, camera_width, camera_height):
+        (gym_id, machine_id, name, top_x, left_y, bottom_x, right_y) = station
+        (top_x, left_y, bottom_x, right_y) = self.convert_station_ratios((top_x, left_y, bottom_x, right_y),
+                                                                         camera_width,
+                                                                         camera_height)
+        self.db = db
         self.name = name
+        self.gym_id = gym_id
+        self.machine_id = machine_id
+
         # Coordinates
         self.top_x = top_x
         self.left_y = left_y
@@ -70,11 +75,11 @@ class Machine:
 
         :return:
         """
-        name, a, b, c, d = station
+        a, b, c, d = station
         w, h = camera_width, camera_height
         top_x, left_y, bottom_x, right_y = int(a * w), int(b * h), int(c * w), int(d * h)
 
-        return name, top_x, left_y, bottom_x, right_y
+        return top_x, left_y, bottom_x, right_y
 
     def increment_machine_time(self, people, image, image_cap_time,time_widget):
         """
@@ -120,8 +125,17 @@ class Machine:
                     self.time_used += image_cap_time - self.first_detected
                     print("Used for: " + str(image_cap_time - self.first_detected))
 
+                    # Send to database
+                    machines.insert_machine_time(self.db,
+                                                 self.gym_id,
+                                                 self.name,
+                                                 self.machine_id,
+                                                 self.first_detected,
+                                                 image_cap_time)
+
         # Update dashboard
         time_widget.update_time(self.name, self.time_used)
+
 
     def calculate_iou(self, box_a, box_b):
         """

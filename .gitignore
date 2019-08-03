@@ -36,7 +36,6 @@ ENV/
 
 # Model data
 *.h5
-Machines.json
 
 # Node
 node_modules/
