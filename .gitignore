@@ -36,6 +36,7 @@ ENV/
 
 # Model data
 *.h5
+gymnoscamera/gym_info.json
 
 # Node
 node_modules/
