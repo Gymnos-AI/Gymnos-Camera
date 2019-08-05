@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='GymnosCamera',
-    version='0.4.0',
+    version='0.4.1',
     license='Creative Commons Attribution-Noncommercial-Share Alike license',
     long_description=open('README.md').read(),
 

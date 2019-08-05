@@ -4,35 +4,38 @@ import cv2
 import json
 from tkinter import *
 import tkinter as tk
+import gymnos_firestore.Machines as machines_db
+
+# Constants
+# Keys to accessing and storing into the Json File
+GYM_ID = "GymID"
+MACHINES = "Machines"
+MACHINE_ID = "MachineID"
+MACHINE_NAME = "Name"
+MACHINE_LOCATION = "Location"
+TOP_X = "TopX"
+LEFT_Y = "LeftY"
+BOTTOM_X = "BottomX"
+RIGHT_Y = "RightY"
+
+# Popup constants
+JSON_LOCATION = "./gymnoscamera/gym_info.json"
+POPUP_TITLE = "Options"
+POPUP_DIMENSIONS = "100x100"
+ANNOTATION_COLOUR = (0, 255, 0)  # RGB
+OPTIONS = [
+    "bench",
+    "squat_rack"
+]
 
 
 class CalibrateCam:
-    def __init__(self, camera, using_mac):
-        # Constants
+    def __init__(self, db, camera, using_mac):
         self.using_mac = using_mac
-
-        # reference to camera
         self.camera = camera
-
-        self.OPTIONS = [
-            "bench",
-            "squat_rack"
-        ]
-        self.json_location = "./gymnoscamera/Machines.json"
-        self.pop_title = "Options"
-        self.popup_dimensions = "100x100"
-        self.annotation_colour = (0, 255, 0)  # RGB
-
-        # Keys to accessing and storing into the Json File
-        self.machines = "machines"
-        self.name = "name"
-        self.top_x = "topX"
-        self.left_y = "leftY"
-        self.bottom_x = "bottomX"
-        self.right_y = "rightY"
-
+        self.db = db
         self.drawing = False
-        self.machines_container = {"machines": []}
+        self.machines_container = {MACHINES: []}
         self.p1 = (0, 0)
         self.p2 = (0, 0)
         cv2.namedWindow('Cam View')
@@ -56,12 +59,15 @@ class CalibrateCam:
                 else:
                     machine_name = self.popup_msg()
 
-                self.machines_container[self.machines].append(
-                    {self.name: machine_name,
-                     self.top_x: self.p1[0],
-                     self.left_y: self.p1[1],
-                     self.bottom_x: self.p2[0],
-                     self.right_y: self.p2[1]})
+                self.machines_container[MACHINES].append(
+                    {MACHINE_NAME: machine_name,
+                     MACHINE_ID: "",
+                     MACHINE_LOCATION: {
+                         TOP_X: self.p1[0],
+                         LEFT_Y: self.p1[1],
+                         BOTTOM_X: self.p2[0],
+                         RIGHT_Y: self.p2[1]}
+                     })
 
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.drawing is True:
@@ -71,24 +77,42 @@ class CalibrateCam:
         """
         Writes machine locations that the user chose into the json file
         """
-        # first convert all raw pixel values into their ratios
-        # this helps with dealing with variable sizing
-        camera_width, camera_height = self.camera.get_dimensions()
-        for points in self.machines_container[self.machines]:
-            points[self.top_x] = int(points[self.top_x]) / camera_width
-            points[self.left_y] = int(points[self.left_y]) / camera_height
-            points[self.bottom_x] = int(points[self.bottom_x]) / camera_width
-            points[self.right_y] = int(points[self.right_y]) / camera_height
+        with open(JSON_LOCATION, 'r') as gym_info:
+            gym_dict = json.load(gym_info)
 
-        with open(self.json_location, 'w') as outfile:
-            json.dump(self.machines_container, outfile, indent=4)
+        """
+        First convert all raw pixel values into their ratios
+        this helps with dealing with variable sizing. We will
+        also create new entry's of machines in the database
+        """
+        camera_width, camera_height = self.camera.get_dimensions()
+        for machine in self.machines_container[MACHINES]:
+            points = machine[MACHINE_LOCATION]
+            points[TOP_X] = int(points[TOP_X]) / camera_width
+            points[LEFT_Y] = int(points[LEFT_Y]) / camera_height
+            points[BOTTOM_X] = int(points[BOTTOM_X]) / camera_width
+            points[RIGHT_Y] = int(points[RIGHT_Y]) / camera_height
+
+            # Create Machine document in the database
+            result, machine_id = machines_db.create_machine(self.db, gym_dict[GYM_ID], machine)
+            machine[MACHINE_ID] = machine_id
+            """
+            Result is false because machine already exists in database.
+            Update database with the new co-ordinates of machine
+            """
+            if result is False:
+                machines_db.update_machine_location(self.db, gym_dict[GYM_ID], machine_id, points)
+
+        with open(JSON_LOCATION, 'w') as outfile:
+            gym_dict[MACHINES] = self.machines_container[MACHINES]
+            json.dump(gym_dict, outfile, indent=4)
 
     def remove_machine(self):
         """
         Handles the removal of the machine from the list of machines
         """
-        if self.machines_container[self.machines]:
-            self.machines_container[self.machines].pop()
+        if self.machines_container[MACHINES]:
+            self.machines_container[MACHINES].pop()
 
     def popup_msg(self):
         """
@@ -96,19 +120,19 @@ class CalibrateCam:
         set list of possible machines.
         """
         popup = tk.Tk()
-        popup.wm_title(self.pop_title)
+        popup.wm_title(POPUP_TITLE)
 
-        popup.geometry(self.popup_dimensions)
+        popup.geometry(POPUP_DIMENSIONS)
 
         variable = StringVar(popup)
-        variable.set(self.OPTIONS[0])  # default value
+        variable.set(OPTIONS[0])  # default value
 
         def get_machine():
             print("Machine name: " + variable.get())
             popup.destroy()
             return variable.get()
 
-        w = OptionMenu(popup, variable, *self.OPTIONS)
+        w = OptionMenu(popup, variable, *OPTIONS)
         w.pack()
 
         button = Button(popup, text="OK",
@@ -124,24 +148,26 @@ class CalibrateCam:
             img_temp = img
 
             if self.p1 and self.p2:
-                cv2.rectangle(img_temp, self.p1, self.p2, self.annotation_colour, 2)
+                cv2.rectangle(img_temp, self.p1, self.p2, ANNOTATION_COLOUR, 2)
 
-            for points in self.machines_container[self.machines]:
+            machines = self.machines_container[MACHINES]
+            for machine in machines:
+                points = machine[MACHINE_LOCATION]
                 cv2.rectangle(img_temp,
-                              (points[self.top_x],
-                               points[self.left_y]),
-                              (points[self.bottom_x],
-                               points[self.right_y]),
-                              self.annotation_colour,
+                              (points[TOP_X],
+                               points[LEFT_Y]),
+                              (points[BOTTOM_X],
+                               points[RIGHT_Y]),
+                              ANNOTATION_COLOUR,
                               2)
 
                 cv2.putText(img_temp,
-                            points[self.name],
-                            (points[self.top_x],
-                             points[self.right_y] - 5),
+                            machine[MACHINE_NAME],
+                            (points[TOP_X],
+                             points[RIGHT_Y] - 5),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             1,
-                            self.annotation_colour,
+                            ANNOTATION_COLOUR,
                             2,
                             cv2.LINE_AA)
 

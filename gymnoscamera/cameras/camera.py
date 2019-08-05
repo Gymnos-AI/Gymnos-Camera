@@ -10,10 +10,21 @@ import cv2
 from gymnoscamera import machine, predictors
 from gymnoscamera.Widgets import frame_timer
 
+JSON_LOCATION = "../gym_info.json"
+GYM_ID = "GymID"
+MACHINES = "Machines"
+MACHINE_ID = "MachineID"
+MACHINE_NAME = "Name"
+MACHINE_LOCATION = "Location"
+TOP_X = "TopX"
+LEFT_Y = "LeftY"
+BOTTOM_X = "BottomX"
+RIGHT_Y = "RightY"
+
 
 class Camera(ABC):
 
-    def __init__(self, model_path: str):
+    def __init__(self, db, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
@@ -28,9 +39,11 @@ class Camera(ABC):
         # initialize stations
         self.stations = []
 
+        self.db = db
+
     def set_stations(self):
         for station in self.get_stations():
-            self.stations.append(machine.Machine(station,
+            self.stations.append(machine.Machine(self.db, station,
                                                  self.camera_width,
                                                  self.camera_height))
 
@@ -41,23 +54,20 @@ class Camera(ABC):
 
         :return: stations: [[name, topX, leftY, bottomX, rightY]]
         """
-        json_file_location = "../Machines.json"
-        machine_key = "machines"
-        machine_name_key = "name"
-        top_x_key = "topX"
-        left_y_key = "leftY"
-        bottom_x_key = "bottomX"
-        right_y_key = "rightY"
-
         stations = []
-        with open(os.path.join(os.path.dirname(__file__), json_file_location)) as json_file:
+        with open(os.path.join(os.path.dirname(__file__), JSON_LOCATION)) as json_file:
             data = json.load(json_file)
-            for machine in data[machine_key]:
-                stations.append([machine[machine_name_key],
-                                 machine[top_x_key],
-                                 machine[left_y_key],
-                                 machine[bottom_x_key],
-                                 machine[right_y_key]])
+            gym_id = data[GYM_ID]
+            for machine in data[MACHINES]:
+                locations = machine[MACHINE_LOCATION]
+                machine_id = machine[MACHINE_ID]
+                stations.append([gym_id,
+                                 machine_id,
+                                 machine[MACHINE_NAME],
+                                 locations[TOP_X],
+                                 locations[LEFT_Y],
+                                 locations[BOTTOM_X],
+                                 locations[RIGHT_Y]])
 
         return stations
 

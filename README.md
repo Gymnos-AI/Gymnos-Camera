@@ -8,8 +8,25 @@ Library for camera and predictions
 
 To run this library standalone:
 
-```bash
-run_camera.py --model path/to/yolo.h5 --usbcam
+NOTE: Step 1-3 should only be done when running this library for the very first time or re-configuring the machines
+1. Add the serviceAccount.json into your working directory. Link: https://drive.google.com/drive/u/0/folders/1HuFFFOWCW10DOTLfIKfUGBdGEdzQYOiP
+2. Add the gym_info.json file in ./gymnoscamera. This file stores all information about your gym and it's machines. 
+It is also used by the client to access the database. Link: https://drive.google.com/drive/u/0/folders/1HuFFFOWCW10DOTLfIKfUGBdGEdzQYOiP
+3. Run the camera with the --configure parameter to initialize the Machines array
+    ```
+    python3 run_camera.py --model path/to/yolo.h5 --usb --configure
+    ```
+4. Run the library
+    ```
+    python3 run_camera.py --model path/to/yolo.h5 --usbcam
+    ```
+
+Possible run options:
+```
+--configure = To configure machines info in gym_info.json
+--model = Path to Yolo model from your working directory
+--usbcam = If you are running this library on Laptop or USB camera
+--mac = If you are running this library on a mac
 ```
 
 ### Installation
