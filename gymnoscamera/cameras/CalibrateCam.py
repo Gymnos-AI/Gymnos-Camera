@@ -95,6 +95,7 @@ class CalibrateCam:
 
             # Create Machine document in the database
             result, machine_id = machines_db.create_machine(self.db, gym_dict[GYM_ID], machine)
+            machine[MACHINE_ID] = machine_id
             """
             Result is false because machine already exists in database.
             Update database with the new co-ordinates of machine
