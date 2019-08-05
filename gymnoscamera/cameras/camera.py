@@ -10,6 +10,17 @@ import cv2
 from gymnoscamera import machine, predictors
 from gymnoscamera.Widgets import frame_timer
 
+JSON_LOCATION = "../gym_info.json"
+GYM_ID = "GymID"
+MACHINES = "Machines"
+MACHINE_ID = "MachineID"
+MACHINE_NAME = "Name"
+MACHINE_LOCATION = "Location"
+TOP_X = "TopX"
+LEFT_Y = "LeftY"
+BOTTOM_X = "BottomX"
+RIGHT_Y = "RightY"
+
 
 class Camera(ABC):
 
@@ -43,31 +54,20 @@ class Camera(ABC):
 
         :return: stations: [[name, topX, leftY, bottomX, rightY]]
         """
-        json_file_location = "../gym_info.json"
-        gym_id_key = "GymID"
-        machine_key = "Machines"
-        machine_id_key = "MachineID"
-        machine_name_key = "Name"
-        machine_location_key = "Location"
-        top_x_key = "TopX"
-        left_y_key = "LeftY"
-        bottom_x_key = "BottomX"
-        right_y_key = "RightY"
-
         stations = []
-        with open(os.path.join(os.path.dirname(__file__), json_file_location)) as json_file:
+        with open(os.path.join(os.path.dirname(__file__), JSON_LOCATION)) as json_file:
             data = json.load(json_file)
-            gym_id = data[gym_id_key]
-            for machine in data[machine_key]:
-                locations = machine[machine_location_key]
-                machine_id = machine[machine_id_key]
+            gym_id = data[GYM_ID]
+            for machine in data[MACHINES]:
+                locations = machine[MACHINE_LOCATION]
+                machine_id = machine[MACHINE_ID]
                 stations.append([gym_id,
                                  machine_id,
-                                 machine[machine_name_key],
-                                 locations[top_x_key],
-                                 locations[left_y_key],
-                                 locations[bottom_x_key],
-                                 locations[right_y_key]])
+                                 machine[MACHINE_NAME],
+                                 locations[TOP_X],
+                                 locations[LEFT_Y],
+                                 locations[BOTTOM_X],
+                                 locations[RIGHT_Y]])
 
         return stations
 
