@@ -47,6 +47,15 @@ class Machine:
         :param image:
         :return:
         """
+        cv2.putText(image,
+                    self.name,
+                    (self.top_x,
+                     self.left_y + 25),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    self.border_colour,
+                    2,
+                    cv2.LINE_AA)
         if self.using:
             cv2.rectangle(image,
                           (self.top_x, self.left_y),
@@ -81,7 +90,7 @@ class Machine:
 
         return top_x, left_y, bottom_x, right_y
 
-    def increment_machine_time(self, people, image, image_cap_time,time_widget):
+    def increment_machine_time(self, people, image, image_cap_time):
         """
         This function checks if a person is using a machine. If
         there is somebody there increment the machine usage time.
@@ -132,10 +141,6 @@ class Machine:
                                                  self.machine_id,
                                                  self.first_detected,
                                                  image_cap_time)
-
-        # Update dashboard
-        time_widget.update_time(self.name, self.time_used)
-
 
     def calculate_iou(self, box_a, box_b):
         """

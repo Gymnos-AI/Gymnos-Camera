@@ -36,7 +36,10 @@ ENV/
 
 # Model data
 *.h5
+
+# Configuration files
 gymnoscamera/gym_info.json
+serviceAccount.json
 
 # Node
 node_modules/

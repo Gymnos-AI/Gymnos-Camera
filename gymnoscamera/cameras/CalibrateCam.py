@@ -54,7 +54,8 @@ class CalibrateCam:
                 self.drawing = False
                 self.p2 = (x, y)
                 if self.using_mac:
-                    print("GUI not supported on Mac, please enter machine name through command line")
+                    print("GUI not supported on Mac, please enter machine name through command line.")
+                    print("Press Q when finished")
                     machine_name = input("Machine name: ")
                 else:
                     machine_name = self.popup_msg()

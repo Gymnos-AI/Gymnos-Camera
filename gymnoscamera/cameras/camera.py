@@ -1,6 +1,5 @@
 import json
 import os
-import tkinter
 from abc import ABC
 import time
 import numpy as np
@@ -8,7 +7,6 @@ import numpy as np
 import cv2
 
 from gymnoscamera import machine, predictors
-from gymnoscamera.Widgets import frame_timer
 
 JSON_LOCATION = "../gym_info.json"
 GYM_ID = "GymID"
@@ -84,8 +82,6 @@ class Camera(ABC):
         This main loop tracks machine usage
         """
         # initialize the Widgets
-        root = tkinter.Tk()
-        ft = frame_timer.frameTimers(root)
         self.set_stations()
         while True:
             # Retrieve a frame and timestamp it
@@ -98,11 +94,10 @@ class Camera(ABC):
 
             # Calculate station usage
             for station in self.stations:
-                station.increment_machine_time(people_coords, image, frame_cap_time, ft)
+                station.increment_machine_time(people_coords, image, frame_cap_time)
 
             image = np.asarray(image)
             cv2.imshow("Video Feed", image)
-            root.update()
 
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('q'):
@@ -112,7 +107,7 @@ class Camera(ABC):
         """
         Retrieves the time in seconds since epoch
         """
-        return time.time()
+        return int(time.time())
 
     def get_frame(self):
         """
