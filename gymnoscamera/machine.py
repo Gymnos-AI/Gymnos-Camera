@@ -81,13 +81,12 @@ class Machine:
 
         return top_x, left_y, bottom_x, right_y
 
-    def increment_machine_time(self, people, image, image_cap_time,time_widget):
+    def increment_machine_time(self, people, image_cap_time, time_widget):
         """
         This function checks if a person is using a machine. If
         there is somebody there increment the machine usage time.
 
-        :param person: Co-ordinates of a single person
-        :param image: Reference to the frame under prediction
+        :param people: Co-ordinates of a single person
         :param image_cap_time: The exact time the image was captured on
         :param time_widget: Reference to the frame_timer widget
         """
@@ -141,9 +140,9 @@ class Machine:
         """
         Computes the intersection over union value between two boxes
 
-        :param box_a:
-        :param box_b:
-        :return:
+        :param box_a: An array of four numbers representing a box's coordinates
+        :param box_b: An array of four numbers representing a box's coordinates
+        :return: The intersection over union value
         """
         # determine the (x, y)-coordinates of the intersection rectangle
         x_a = max(box_a[0], box_b[0])
