@@ -22,7 +22,7 @@ class Machine:
         self.bottom_x = bottom_x
         self.right_y = right_y
 
-        self.iou_threshold = 0.01
+        self.iou_threshold = 0.4
         self.time_threshold = 2  # how many seconds until machine is sure you are in or out
 
         self.font = cv2.FONT_HERSHEY_SIMPLEX
