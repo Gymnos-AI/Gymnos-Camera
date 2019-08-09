@@ -5,7 +5,7 @@
 
 # Gymnos Packages
 gymnoscamera==0.4.1
-gymnosfirestoreapi==0.2.1
+gymnosfirestoreapi==0.2.5
 
 # PyPi Package
 opencv-python==4.1.0.25
