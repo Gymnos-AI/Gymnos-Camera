@@ -22,7 +22,7 @@ class Machine:
         self.bottom_x = bottom_x
         self.right_y = right_y
 
-        self.iou_threshold = 0.4
+        self.iou_threshold = 0.01
         self.time_threshold = 2  # how many seconds until machine is sure you are in or out
 
         self.font = cv2.FONT_HERSHEY_SIMPLEX
@@ -33,6 +33,14 @@ class Machine:
         self.using = False
         self.first_detected = 0
         self.time_elapsed = 0
+        self.last_seen_unix = 0
+        self.last_seen_threshold = 2
+        """
+        Padding will deal with the case a user moves slightly out of the machine
+        but we still want to detect them as using the machine
+        Ex) Padding of 10 will add 10 pixels in each direction around the border
+        """
+        self.padding = 10
 
     def get_machine_colour(self):
         if self.name == "squat_rack":
@@ -100,19 +108,18 @@ class Machine:
         :param image_cap_time: The exact time the image was captured on
         :param time_widget: Reference to the frame_timer widget
         """
-        highest_iou_value = 0
         # Find out if there is at least one person using the machine
+        person_inside = False
         for person in people:
             (h_top_x, h_left_y, h_bottom_x, h_right_y) = person
 
-            iou_value = self.calculate_iou((self.top_x, self.left_y, self.bottom_x, self.right_y),
-                                           (h_top_x, h_left_y, h_bottom_x, h_right_y))
-
-            if iou_value > highest_iou_value:
-                highest_iou_value = iou_value
+            person_inside = self.check_inside((h_top_x, h_left_y, h_bottom_x, h_right_y))
+            if person_inside:
+                break
 
         # if there is somebody in the machine
-        if highest_iou_value > self.iou_threshold:
+        if person_inside:
+            self.last_seen_unix = image_cap_time
             if self.inside is False:
                 self.inside = True
                 self.first_detected = image_cap_time
@@ -124,10 +131,14 @@ class Machine:
                     self.using = True
                     self.time_elapsed = self.first_detected
         else:
-            # Turn off all flags if they are set
-            if self.inside:
+            """
+            If a person is no longer inside and last time we 
+            seen someone was past the last seen threshold
+            """
+            last_seen = image_cap_time - self.last_seen_unix
+            if last_seen > self.last_seen_threshold:
+                # Turn off all flags if they are set
                 self.inside = False
-
                 # if machine was being used log that time
                 if self.using:
                     self.using = False
@@ -170,5 +181,18 @@ class Machine:
         iou = inter_area / float(box_a_area + box_b_area - inter_area)
 
         # return the intersection over union value
-        # print(iou)
         return iou
+
+    def check_inside(self, person):
+        """
+        Checks to see if anyone is inside the machine
+        """
+        p_top_x = person[0] + self.padding
+        p_left_y = person[1] + self.padding
+        p_bottom_x = person[2] - self.padding
+        p_right_y = person[3] - self.padding
+
+        if p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x and p_right_y <= self.right_y:
+            return True
+        else:
+            return False
