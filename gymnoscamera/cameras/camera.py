@@ -85,8 +85,7 @@ class Camera(ABC):
         self.set_stations()
         while True:
             # Retrieve a frame and timestamp it
-            image = self.get_frame()
-            frame_cap_time = self.get_time()
+            image, frame_cap_time = self.get_frame()
 
             # Draw machines and users
             self.draw_machines(image)
@@ -96,7 +95,6 @@ class Camera(ABC):
             for station in self.stations:
                 station.increment_machine_time(people_coords, image, frame_cap_time)
 
-            image = np.asarray(image)
             cv2.imshow("Video Feed", image)
 
             # Press 'q' to quit

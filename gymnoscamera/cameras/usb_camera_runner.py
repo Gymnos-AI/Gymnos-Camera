@@ -25,4 +25,4 @@ class UsbCameraRunner(Camera):
         ret, image = self.camera.read()
         image = cv2.resize(image, (self.camera_height, self.camera_width))
 
-        return image
+        return image, time.time()

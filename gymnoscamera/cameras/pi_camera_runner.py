@@ -28,4 +28,4 @@ class PiCameraRunner(Camera):
         frame = self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
         image = frame.array
 
-        return image
+        return image, time.time()

@@ -10,6 +10,9 @@ class CameraFactory:
         elif camera_type == 'pi':
             from gymnoscamera.cameras.pi_camera_runner import PiCameraRunner
             return PiCameraRunner(db, model_path)
+        elif camera_type == 'ip':
+            from gymnoscamera.cameras.ip_camera_runner import IpCameraRunner
+            return IpCameraRunner(db, model_path)
         else:
             raise ValueError(camera_type)
 
