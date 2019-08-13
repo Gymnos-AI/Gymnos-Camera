@@ -28,8 +28,8 @@ class Camera(ABC):
         :param model_path:
         """
         # initialize general camera params
-        self.camera_height = 256
-        self.camera_width = 256
+        self.camera_height = 384
+        self.camera_width = 384
 
         # initialize the Predictor
         self.predictor = predictors.Predictors('YOLOV3', model_path)
@@ -85,8 +85,7 @@ class Camera(ABC):
         self.set_stations()
         while True:
             # Retrieve a frame and timestamp it
-            image = self.get_frame()
-            frame_cap_time = self.get_time()
+            image, frame_cap_time = self.get_frame()
 
             # Draw machines and users
             self.draw_machines(image)
@@ -96,7 +95,6 @@ class Camera(ABC):
             for station in self.stations:
                 station.increment_machine_time(people_coords, image, frame_cap_time)
 
-            image = np.asarray(image)
             cv2.imshow("Video Feed", image)
 
             # Press 'q' to quit

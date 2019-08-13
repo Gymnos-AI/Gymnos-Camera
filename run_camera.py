@@ -24,6 +24,8 @@ def parse_args():
                         action='store', required=True)
     parser.add_argument('--usbcam', help='Use a USB webcam instead of picamera',
                         action='store_true')
+    parser.add_argument('--ipcam', help='Use an IP webcam',
+                        action='store_true')
     parser.add_argument('--mac', help='Using a mac',
                         action='store_true')
 
@@ -40,9 +42,13 @@ def main():
     """
     args = parse_args()
 
-    camera_type = 'pi'
     if args.usbcam:
         camera_type = 'usb'
+    elif args.ipcam:
+        camera_type = 'ip'
+    else:
+        camera_type = 'pi'
+
     model_path = os.path.abspath(args.model)
 
     # Get the selected camera

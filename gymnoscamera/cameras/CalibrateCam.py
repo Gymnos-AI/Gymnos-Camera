@@ -145,7 +145,7 @@ class CalibrateCam:
 
     def main(self):
         while True:
-            img = self.camera.get_frame()
+            img, frame_cap_time = self.camera.get_frame()
             img_temp = img
 
             if self.p1 and self.p2:
