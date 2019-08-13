@@ -28,8 +28,8 @@ class Camera(ABC):
         :param model_path:
         """
         # initialize general camera params
-        self.camera_height = 256
-        self.camera_width = 256
+        self.camera_height = 384
+        self.camera_width = 384
 
         # initialize the Predictor
         self.predictor = predictors.Predictors('YOLOV3', model_path)

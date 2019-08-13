@@ -15,9 +15,15 @@ class IpCameraRunner(Camera):
     def __init__(self, db, model_path: str):
         super().__init__(db, model_path)
 
-        # initialize the camera
-        self.camera = cv2.VideoCapture('rtsp://admin:MZEJUT@192.168.1.90:554/h264_stream')
-        self.camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        user = 'admin'
+        password = 'MZEJUT'
+        ip_address = '192.168.1.90'
+        port = '554'
+        stream = 'h264_stream'
+
+        # connect to the stream
+        url = 'rtsp://{}:{}@{}:{}/{}'.format(user, password, ip_address, port, stream)
+        self.camera = cv2.VideoCapture(url)
         time.sleep(0.5)
         self.point = 0
 
