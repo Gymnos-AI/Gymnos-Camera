@@ -1,5 +1,6 @@
 import cv2
 import gymnos_firestore.Machines as machines
+import threading
 
 
 class Machine:
@@ -146,12 +147,19 @@ class Machine:
                     print("Used for: " + str(image_cap_time - self.first_detected))
 
                     # Send to database
-                    machines.insert_machine_time(self.db,
-                                                 self.gym_id,
-                                                 self.name,
-                                                 self.machine_id,
-                                                 self.first_detected,
-                                                 image_cap_time)
+                    db_thread = threading.Thread(target=self.send_usage_to_database, args=[image_cap_time])
+                    db_thread.start()
+
+    def send_usage_to_database(self, image_cap_time):
+        """
+        Send DB in a thread to speed up execution of incrementation loop
+        """
+        machines.insert_machine_time(self.db,
+                                     self.gym_id,
+                                     self.name,
+                                     self.machine_id,
+                                     self.first_detected,
+                                     image_cap_time)
 
     def calculate_iou(self, box_a, box_b):
         """
