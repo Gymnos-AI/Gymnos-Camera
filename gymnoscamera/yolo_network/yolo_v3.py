@@ -103,16 +103,12 @@ class YOLO(object):
         return boxes, scores, classes
 
     def detect_image(self, image):
-        start = timer()
-
         image_data = np.array(image, dtype='float32')
 
-        #print(image_data.shape)
         (image_height, image_width, channels) = image_data.shape
 
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-
 
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
@@ -128,20 +124,14 @@ class YOLO(object):
 
             if predicted_class == "person":
                 box = out_boxes[i]
-                score = out_scores[i]
-
-                label = '{} {:.2f}'.format(predicted_class, score)
 
                 top, left, bottom, right = box
                 top = max(0, np.floor(top + 0.5).astype('int32'))
                 left = max(0, np.floor(left + 0.5).astype('int32'))
                 bottom = min(image_height, np.floor(bottom + 0.5).astype('int32'))
                 right = min(image_width, np.floor(right + 0.5).astype('int32'))
-                # print(label, (left, top), (right, bottom))
                 list_of_coords.append((left + i, top + i, right - i, bottom - i))
 
-        # end = timer()
-        # print(end - start)
         return list_of_coords
 
 

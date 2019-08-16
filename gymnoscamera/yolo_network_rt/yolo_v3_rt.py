@@ -25,7 +25,6 @@ class Yolo_v3_rt:
     def __init__(self):
         self.__dict__.update(self._defaults)  # set up default values
 
-        self.load_tf_rt_graph()
         self.tf_sess = self.load_tf_rt_graph()
 
         self.output_tensor = []
@@ -47,6 +46,8 @@ class Yolo_v3_rt:
         return graph_def
 
     def load_tf_rt_graph(self):
+        tf.keras.backend.clear_session()
+
         trt_graph = self.get_frozen_graph('./trt_graph.pb')
 
         # Create session and load graph
@@ -107,7 +108,6 @@ class Yolo_v3_rt:
             feed_dict={
                 self.input_tensor: image_data,
                 self.input_image_shape: [image_height, image_width],
-                K.learning_phase(): 0
             })
         print(out_boxes.shape)
         list_of_coords = []
