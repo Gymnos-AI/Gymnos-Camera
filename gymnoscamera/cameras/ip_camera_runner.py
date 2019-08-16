@@ -17,7 +17,7 @@ class IpCameraRunner(Camera):
 
         user = 'admin'
         password = 'MZEJUT'
-        ip_address = '192.168.1.90'
+        ip_address = '192.168.1.75'
         port = '554'
         stream = 'h264_stream'
 

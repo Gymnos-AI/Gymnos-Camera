@@ -28,11 +28,11 @@ class Camera(ABC):
         :param model_path:
         """
         # initialize general camera params
-        self.camera_height = 384
-        self.camera_width = 384
+        self.camera_height = 256
+        self.camera_width = 256
 
         # initialize the Predictor
-        self.predictor = predictors.Predictors('YOLOV3', model_path)
+        self.predictor = predictors.Predictors('YOLOV3RT', model_path)
 
         # initialize stations
         self.stations = []
@@ -89,7 +89,10 @@ class Camera(ABC):
 
             # Draw machines and users
             self.draw_machines(image)
+            start_time = time.time()
             people_coords = self.draw_people(image)
+            end_time = time.time()
+            print("Time taken: " + str(end_time - start_time))
 
             # Calculate station usage
             for station in self.stations:
@@ -120,7 +123,7 @@ class Camera(ABC):
         :param image: frame we will run predictions on
         :return: list of the coordinates of each person our model detects
         """
-        list_of_coords = self.predictor.yolo_v3_detector(image)
+        list_of_coords = self.predictor.yolo_v3_rt(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
             cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
 
