@@ -11,6 +11,7 @@ JSON_LOCATION = "../gym_info.json"
 GYM_ID = "GymID"
 MACHINES = "Machines"
 MACHINE_ID = "MachineID"
+MACHINE_OPEN = "Open"
 MACHINE_NAME = "Name"
 MACHINE_LOCATION = "Location"
 TOP_X = "TopX"
@@ -26,6 +27,8 @@ class Camera(ABC):
         Initialize the camera, predictor and stations
         :param model_path:
         """
+        self.db = db
+
         self.headless_mode = False
 
         self.view_only = False
@@ -39,8 +42,8 @@ class Camera(ABC):
 
         # initialize stations
         self.stations = []
+        self.set_stations()
 
-        self.db = db
 
     def set_stations(self):
         for station in self.get_stations():
@@ -84,8 +87,6 @@ class Camera(ABC):
         """
         This main loop tracks machine usage
         """
-        # initialize the Widgets
-        self.set_stations()
         while True:
             # Retrieve a frame and timestamp it
             image, frame_cap_time = self.get_frame()
@@ -109,6 +110,8 @@ class Camera(ABC):
     def set_view_only(self):
         print("Setting to View only")
         self.view_only = True
+        for station in self.stations:
+            station.watch_machine_status()
 
     def set_head_less(self):
         print("Setting Headless Mode on")
@@ -133,13 +136,9 @@ class Camera(ABC):
         :param image: frame we will run predictions on
         :return: list of the coordinates of each person our model detects
         """
-        start_time = time.time()
         list_of_coords = self.predictor.run_prediction(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
             cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
-
-        end_time = time.time()
-        print("Network took: " + str(end_time - start_time))
 
         return list_of_coords
 
