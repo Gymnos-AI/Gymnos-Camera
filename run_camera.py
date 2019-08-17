@@ -24,9 +24,9 @@ model_types = [
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('model_type', help='A file path to a model file',
+    parser.add_argument('model_type', help='Choose from [HOG, YOLOV3, YOLOV3RT]',
                         action='store')
-    parser.add_argument('--configure', help='If true',
+    parser.add_argument('--configure', help='Configure Machine locations',
                         action='store_true')
     parser.add_argument('--model_location', help='A file path to a model file',
                         action='store', required=True)
@@ -35,6 +35,8 @@ def parse_args():
     parser.add_argument('--ipcam', help='Use an IP webcam',
                         action='store_true')
     parser.add_argument('--mac', help='Using a mac',
+                        action='store_true')
+    parser.add_argument('--headless', help='Run the algorithm without GUI',
                         action='store_true')
 
     return parser.parse_args()
@@ -50,6 +52,10 @@ def main():
     """
     args = parse_args()
 
+    headless_mode = False
+    if args.headless:
+        headless_mode = True
+
     if args.usbcam:
         camera_type = 'usb'
     elif args.ipcam:
@@ -64,7 +70,7 @@ def main():
     model_path = os.path.abspath(args.model_location)
 
     # Get the selected camera
-    camera = camera_factory.factory.get_camera(db, camera_type, model_type, model_path)
+    camera = camera_factory.factory.get_camera(db, camera_type, model_type, model_path, headless_mode)
 
     if args.configure:
         calibrate = CalibrateCam.CalibrateCam(db, camera, args.mac)

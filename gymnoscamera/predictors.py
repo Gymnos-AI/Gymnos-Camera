@@ -6,7 +6,6 @@ from timeit import default_timer as timer
 
 class Predictors:
     def __init__(self, model_type, model_path: str):
-        print("This: "+ str(model_type))
         if model_type == 'HOG':
             print("Using CV2 Hog Detector")
             self.model = cv2.HOGDescriptor()

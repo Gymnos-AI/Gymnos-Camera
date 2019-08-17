@@ -22,11 +22,13 @@ RIGHT_Y = "RightY"
 
 class Camera(ABC):
 
-    def __init__(self, db, model_type, model_path: str):
+    def __init__(self, db, model_type, model_path: str, headless_mode):
         """
         Initialize the camera, predictor and stations
         :param model_path:
         """
+        self.headless_mode = headless_mode
+
         # initialize general camera params
         self.camera_height = 256
         self.camera_width = 256
@@ -92,17 +94,18 @@ class Camera(ABC):
             start_time = time.time()
             people_coords = self.draw_people(image)
             end_time = time.time()
-            print("Time taken: " + str(end_time - start_time))
+            print("Network took: " + str(end_time - start_time))
 
             # Calculate station usage
             for station in self.stations:
                 station.increment_machine_time(people_coords, image, frame_cap_time)
 
-            cv2.imshow("Video Feed", image)
+            if not self.headless_mode:
+                cv2.imshow("Video Feed", image)
 
-            # Press 'q' to quit
-            if cv2.waitKey(1) == ord('q'):
-                break
+                # Press 'q' to quit
+                if cv2.waitKey(1) == ord('q'):
+                    break
 
     def get_time(self):
         """
