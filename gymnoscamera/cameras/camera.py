@@ -2,7 +2,6 @@ import json
 import os
 from abc import ABC
 import time
-import numpy as np
 
 import cv2
 
@@ -22,12 +21,14 @@ RIGHT_Y = "RightY"
 
 class Camera(ABC):
 
-    def __init__(self, db, model_type, model_path: str, headless_mode):
+    def __init__(self, db, model_type, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
         """
-        self.headless_mode = headless_mode
+        self.headless_mode = False
+
+        self.view_only = False
 
         # initialize general camera params
         self.camera_height = 256
@@ -91,14 +92,12 @@ class Camera(ABC):
 
             # Draw machines and users
             self.draw_machines(image)
-            start_time = time.time()
-            people_coords = self.draw_people(image)
-            end_time = time.time()
-            print("Network took: " + str(end_time - start_time))
+            if not self.view_only:
+                people_coords = self.draw_people(image)
 
-            # Calculate station usage
-            for station in self.stations:
-                station.increment_machine_time(people_coords, image, frame_cap_time)
+                # Calculate station usage
+                for station in self.stations:
+                    station.increment_machine_time(people_coords, image, frame_cap_time)
 
             if not self.headless_mode:
                 cv2.imshow("Video Feed", image)
@@ -106,6 +105,14 @@ class Camera(ABC):
                 # Press 'q' to quit
                 if cv2.waitKey(1) == ord('q'):
                     break
+
+    def set_view_only(self):
+        print("Setting to View only")
+        self.view_only = True
+
+    def set_head_less(self):
+        print("Setting Headless Mode on")
+        self.headless_mode = True
 
     def get_time(self):
         """
@@ -126,9 +133,13 @@ class Camera(ABC):
         :param image: frame we will run predictions on
         :return: list of the coordinates of each person our model detects
         """
+        start_time = time.time()
         list_of_coords = self.predictor.run_prediction(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
             cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
+
+        end_time = time.time()
+        print("Network took: " + str(end_time - start_time))
 
         return list_of_coords
 
