@@ -99,23 +99,28 @@ class Camera(ABC):
         """
         # initialize the Widgets
         self.set_stations()
+        draw_people = self.draw_people
+        get_time = time.time
+        draw_machines = self.draw_machines
+        show_feed = cv2.imshow
         while True:
             # Retrieve a frame and timestamp it
             image, frame_cap_time = self.get_frame()
 
             # Draw machines and users
-            self.draw_machines(image)
-            start_time = time.time()
-            people_coords = self.draw_people(image)
-            end_time = time.time()
-            print("Network took: " + str(end_time - start_time))
+            draw_machines(image)
+            start_time = get_time()
+            people_coords = draw_people(image)
+            end_time = get_time()
+            logging.info('Network took: {:3.10f}'.format(end_time - start_time))
+            #print("Network took: " + str(end_time - start_time))
 
             # Calculate station usage
             for station in self.stations:
                 station.increment_machine_time(people_coords, image, frame_cap_time)
 
             if not self.headless_mode:
-                cv2.imshow("Video Feed", image)
+                show_feed("Video Feed", image)
 
                 # Press 'q' to quit
                 if cv2.waitKey(1) == ord('q'):
@@ -140,9 +145,10 @@ class Camera(ABC):
         :param image: frame we will run predictions on
         :return: list of the coordinates of each person our model detects
         """
+        rectanglefy = cv2.rectangle
         list_of_coords = self.predictor.run_prediction(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
-            cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
+            rectanglefy(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
 
         return list_of_coords
 
