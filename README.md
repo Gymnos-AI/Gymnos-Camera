@@ -15,18 +15,21 @@ To run this library standalone:
 
 Possible run options:
 ```
+model_type = 
 --configure = To configure machines info in gym_info.json
---model = Path to Yolo model from your working directory
+--model_location = Path to Yolo model from your working directory
 --usbcam = If you are running this library on Laptop or USB camera
+--ipcam = If you want to connect to the Security Camera
 --mac = If you are running this library on a mac
+--headless = Run without GUI
 ```
 1. Run the camera with the --configure parameter to initialize the Machines array
     ```
-    python3 run_camera.py --model yolo.h5 --usb --configure
+    python3 run_camera.py model_type --model_location yolo.h5 --usb --configure
     ```
 2. Run the library
     ```
-    python3 run_camera.py --model yolo.h5 --usbcam
+    python3 run_camera.py model_type --model_location yolo.h5 --usbcam
     ```
 
 ### Installation
