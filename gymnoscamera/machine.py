@@ -2,6 +2,15 @@ import cv2
 import gymnos_firestore.Machines as machines
 import threading
 
+# Gym collection keys
+GYM_COLLECTION = u'Gyms'
+
+# Machine collection keys
+MACHINE_COLLECTION = u'Machines'
+MACHINE_ID = u'MachineID'
+MACHINE_NAME = u'Name'
+MACHINE_OPEN = u'Open'
+
 
 class Machine:
     """
@@ -13,6 +22,7 @@ class Machine:
                                                                          camera_width,
                                                                          camera_height)
         self.db = db
+
         self.name = name
         self.gym_id = gym_id
         self.machine_id = machine_id
@@ -129,6 +139,11 @@ class Machine:
                 # If they have been using this machine for a set period
                 # of time, we can be sure the machine is in use
                 if diff > self.time_threshold:
+                    # Tell all clients this machine is being used now
+                    machines.update_status(self.db,
+                                           self.gym_id,
+                                           self.machine_id,
+                                           False)
                     self.using = True
                     self.time_elapsed = self.first_detected
         else:
@@ -160,6 +175,27 @@ class Machine:
                                      self.machine_id,
                                      self.first_detected,
                                      image_cap_time)
+
+        machines.update_status(self.db,
+                               self.gym_id,
+                               self.machine_id,
+                               True)
+
+    def watch_machine_status(self):
+        # Create a callback on_snapshot function to capture changes
+        def on_snapshot(doc_snapshot, changes, read_time):
+            for doc in doc_snapshot:
+                machine_dict = doc.to_dict()
+                machine_open = machine_dict[MACHINE_OPEN]
+                if machine_open:
+                    self.using = False
+                else:
+                    self.using = True
+
+        doc_ref = self.db.collection(GYM_COLLECTION).document(self.gym_id).collection(MACHINE_COLLECTION).document(self.machine_id)
+
+        # Watch the document
+        doc_ref.on_snapshot(on_snapshot)
 
     def calculate_iou(self, box_a, box_b):
         """
