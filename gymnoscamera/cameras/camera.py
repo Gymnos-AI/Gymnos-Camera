@@ -3,6 +3,8 @@ import os
 from abc import ABC
 import time
 import numpy as np
+import logging
+from datetime import date
 
 import cv2
 
@@ -18,6 +20,17 @@ TOP_X = "TopX"
 LEFT_Y = "LeftY"
 BOTTOM_X = "BottomX"
 RIGHT_Y = "RightY"
+
+try:
+    os.mkdir('/tmp/gymnos_camera')
+except OSError:
+    print ("Creation of the directory %s failed" % '/tmp/gymnos_camera')
+else:
+    print ("Successfully created the directory %s " % '/tmp/gymnos_camera')
+
+today = date.today()
+file_name = '/tmp/gymnos_camera/{}.log'.format(today)
+logging.basicConfig(filename=file_name, level=logging.INFO)
 
 
 class Camera(ABC):
@@ -54,6 +67,7 @@ class Camera(ABC):
 
         :return: stations: [[name, topX, leftY, bottomX, rightY]]
         """
+
         stations = []
         with open(os.path.join(os.path.dirname(__file__), JSON_LOCATION)) as json_file:
             data = json.load(json_file)
