@@ -5,6 +5,7 @@ import time
 import numpy as np
 
 import cv2
+from gymnos_firestore import machines
 
 from gymnoscamera import machine, predictors
 
@@ -14,15 +15,11 @@ MACHINES = "Machines"
 MACHINE_ID = "MachineID"
 MACHINE_NAME = "Name"
 MACHINE_LOCATION = "Location"
-TOP_X = "TopX"
-LEFT_Y = "LeftY"
-BOTTOM_X = "BottomX"
-RIGHT_Y = "RightY"
 
 
 class Camera(ABC):
 
-    def __init__(self, db, model_path: str):
+    def __init__(self, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
@@ -37,35 +34,32 @@ class Camera(ABC):
         # initialize stations
         self.stations = []
 
-        self.db = db
-
     def set_stations(self):
-        for station in self.get_stations():
-            self.stations.append(machine.Machine(self.db, station,
-                                                 self.camera_width,
-                                                 self.camera_height))
+        """
+        Set the machine stations for this camera
+        :return:
+        """
+        for station in self.get_configured_machines():
+            self.stations.append(machine.Machine(station, self.camera_width, self.camera_height))
 
-    def get_stations(self):
+    def get_configured_machines(self):
         """
         Retrieves the machines from the JSON file and returns it
-        as a list
+        as a list of machine models
 
-        :return: stations: [[name, topX, leftY, bottomX, rightY]]
+        :return: stations: [machine model]
         """
         stations = []
         with open(os.path.join(os.path.dirname(__file__), JSON_LOCATION)) as json_file:
             data = json.load(json_file)
-            gym_id = data[GYM_ID]
-            for machine in data[MACHINES]:
-                locations = machine[MACHINE_LOCATION]
-                machine_id = machine[MACHINE_ID]
-                stations.append([gym_id,
-                                 machine_id,
-                                 machine[MACHINE_NAME],
-                                 locations[TOP_X],
-                                 locations[LEFT_Y],
-                                 locations[BOTTOM_X],
-                                 locations[RIGHT_Y]])
+            for machine_data in data[MACHINES]:
+                machine_model = machines.Machines()
+                machine_model.id = machine_data['id']
+                machine_model.machine_id = machine_data['machine_id']
+                machine_model.name = machine_data['name']
+                machine_model.location = machine_data['location']
+
+                stations.append(machine_model)
 
         return stations
 
@@ -94,7 +88,7 @@ class Camera(ABC):
 
             # Calculate station usage
             for station in self.stations:
-                station.increment_machine_time(people_coords, image, frame_cap_time)
+                station.increment_machine_time(people_coords, frame_cap_time)
 
             image = np.asarray(image)
             cv2.imshow("Video Feed", image)

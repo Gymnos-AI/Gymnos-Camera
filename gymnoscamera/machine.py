@@ -1,20 +1,23 @@
+import datetime
+
 import cv2
-import gymnos_firestore.Machines as machines
+import gymnos_firestore.machines as machines
+from gymnos_firestore import usage
+from matchbox.queries.error import DocumentDoesNotExists
+
+TOP_X = "TopX"
+LEFT_Y = "LeftY"
+BOTTOM_X = "BottomX"
+RIGHT_Y = "RightY"
 
 
 class Machine:
     """
     This class keeps track of machine coordinates and machine usage
     """
-    def __init__(self, db, station, camera_width, camera_height):
-        (gym_id, machine_id, name, top_x, left_y, bottom_x, right_y) = station
-        (top_x, left_y, bottom_x, right_y) = self.convert_station_ratios((top_x, left_y, bottom_x, right_y),
-                                                                         camera_width,
-                                                                         camera_height)
-        self.db = db
-        self.name = name
-        self.gym_id = gym_id
-        self.machine_id = machine_id
+    def __init__(self, station: machines.Machines, camera_width, camera_height):
+        (top_x, left_y, bottom_x, right_y) = self.convert_station_ratios(station, camera_width, camera_height)
+        self.model = station
 
         # Coordinates
         self.top_x = top_x
@@ -35,7 +38,7 @@ class Machine:
         self.time_elapsed = 0
 
     def get_machine_colour(self):
-        if self.name == "squat_rack":
+        if self.model.name == "squat_rack":
             return 0, 0, 255
         else:
             return 255, 0, 0
@@ -48,7 +51,7 @@ class Machine:
         :return:
         """
         cv2.putText(image,
-                    self.name,
+                    self.model.name,
                     (self.top_x,
                      self.left_y + 25),
                     cv2.FONT_HERSHEY_SIMPLEX,
@@ -75,30 +78,29 @@ class Machine:
                           self.border_colour,
                           1)
 
-    def convert_station_ratios(self, station, camera_width, camera_height):
+    def convert_station_ratios(self, station: machines.Machines, camera_width: int, camera_height: int):
         """
         This function converts station ratios to real pixel values
         :param station:
-        :param camera_height:
         :param camera_width:
+        :param camera_height:
 
         :return:
         """
-        a, b, c, d = station
-        w, h = camera_width, camera_height
-        top_x, left_y, bottom_x, right_y = int(a * w), int(b * h), int(c * w), int(d * h)
+        top_x = int(station.location[TOP_X] * camera_width)
+        left_y = int(station.location[LEFT_Y] * camera_height)
+        bottom_x = int(station.location[BOTTOM_X] * camera_width)
+        right_y = int(station.location[RIGHT_Y] * camera_height)
 
         return top_x, left_y, bottom_x, right_y
 
-    def increment_machine_time(self, people, image, image_cap_time):
+    def increment_machine_time(self, people, image_cap_time):
         """
         This function checks if a person is using a machine. If
         there is somebody there increment the machine usage time.
 
-        :param person: Co-ordinates of a single person
-        :param image: Reference to the frame under prediction
+        :param people: Co-ordinates of a single person
         :param image_cap_time: The exact time the image was captured on
-        :param time_widget: Reference to the frame_timer widget
         """
         highest_iou_value = 0
         # Find out if there is at least one person using the machine
@@ -135,12 +137,34 @@ class Machine:
                     print("Used for: " + str(image_cap_time - self.first_detected))
 
                     # Send to database
-                    machines.insert_machine_time(self.db,
-                                                 self.gym_id,
-                                                 self.name,
-                                                 self.machine_id,
-                                                 self.first_detected,
-                                                 image_cap_time)
+                    start_time, end_time = self.first_detected, image_cap_time
+                    self.insert_machine_time(start_time, end_time)
+
+    def insert_machine_time(self, start: int, end: int):
+        """
+        Inserts a row of machine usage
+
+        :param start: Start of machine usage in Unix time
+        :param end: End of machine usage in Unix time
+        """
+        today = datetime.date.today().strftime("%Y/%m/%d")
+        machine_time = '{}#{}'.format(start, end)
+        time_used = end - start
+
+        try:
+            usage_today = usage.Usage.objects.get(MachineID=self.model.id, Date=today, Name=self.model.name)
+        except DocumentDoesNotExists:
+            usage_today = usage.Usage()
+            usage_today.date = today
+            usage_today.machine_id = self.model.id
+            usage_today.name = self.model.name
+            usage_today.times = []
+            usage_today.total_time = 0
+
+        usage_today.times.append(machine_time)
+        usage_today.total_time += time_used
+
+        usage_today.save()
 
     def calculate_iou(self, box_a, box_b):
         """

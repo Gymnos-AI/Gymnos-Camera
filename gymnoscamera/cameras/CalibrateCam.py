@@ -1,18 +1,20 @@
 # Python program to extract rectangular
 # Shape using OpenCV and tkinter in Python3
-import cv2
 import json
-from tkinter import *
 import tkinter as tk
-import gymnos_firestore.Machines as machines_db
+from tkinter import *
 
+import cv2
 # Constants
 # Keys to accessing and storing into the Json File
+from gymnos_firestore import machines
+
 GYM_ID = "GymID"
 MACHINES = "Machines"
 MACHINE_ID = "MachineID"
 MACHINE_NAME = "Name"
 MACHINE_LOCATION = "Location"
+RAW_LOCATIONS = "RawLocations"
 TOP_X = "TopX"
 LEFT_Y = "LeftY"
 BOTTOM_X = "BottomX"
@@ -30,12 +32,20 @@ OPTIONS = [
 
 
 class CalibrateCam:
-    def __init__(self, db, camera, using_mac):
-        self.using_mac = using_mac
+    """This class runs the configuration app which allows for machine modification"""
+    def __init__(self, camera, using_mac):
         self.camera = camera
-        self.db = db
+        self.using_mac = using_mac
         self.drawing = False
-        self.machines_container = {MACHINES: []}
+
+        # Get current machines from db
+        # TODO: This should be a specific query for machines controlled by this camera
+        machines_list = list(machines.Machines.objects.all().execute())
+        self.machines_container = [
+            (machine, self.convert_scaled_to_absolute(machine.location, self.camera.get_dimensions()))
+            for machine in machines_list
+        ]
+        self.new_machines_idx_list = []
         self.p1 = (0, 0)
         self.p2 = (0, 0)
         cv2.namedWindow('Cam View')
@@ -60,23 +70,59 @@ class CalibrateCam:
                 else:
                     machine_name = self.popup_msg()
 
-                self.machines_container[MACHINES].append(
-                    {MACHINE_NAME: machine_name,
-                     MACHINE_ID: "",
-                     MACHINE_LOCATION: {
-                         TOP_X: self.p1[0],
-                         LEFT_Y: self.p1[1],
-                         BOTTOM_X: self.p2[0],
-                         RIGHT_Y: self.p2[1]}
-                     })
+                raw_location = {
+                    TOP_X: self.p1[0],
+                    LEFT_Y: self.p1[1],
+                    BOTTOM_X: self.p2[0],
+                    RIGHT_Y: self.p2[1]
+                }
+                scaled_location = self.convert_absolute_to_scaled(raw_location, self.camera.get_dimensions())
+
+                self.machines_container.append((
+                    machines.Machines(
+                        machine_id="",
+                        name=machine_name,
+                        location=scaled_location
+                    ), raw_location
+                ))
 
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.drawing is True:
                 self.p2 = (x, y)
 
+    def convert_scaled_to_absolute(self, points: dict, camera_dimensions: tuple) -> dict:
+        """
+        Converts points from scaled values (0-1) to absolute pixel values. Creates a new dict.
+        :param points:
+        :param camera_dimensions:
+        :return: Absolute points data
+        """
+        (camera_width, camera_height) = camera_dimensions
+        new_points = dict()
+        new_points[TOP_X] = int(points[TOP_X] * camera_width)
+        new_points[LEFT_Y] = int(points[LEFT_Y] * camera_height)
+        new_points[BOTTOM_X] = int(points[BOTTOM_X] * camera_width)
+        new_points[RIGHT_Y] = int(points[RIGHT_Y] * camera_height)
+        return new_points
+
+    def convert_absolute_to_scaled(self, points: dict, camera_dimensions: tuple) -> dict:
+        """
+        Converts points from absolute pixel values to scaled values (0-1). Creates a new dict.
+        :param points:
+        :param camera_dimensions:
+        :return: Scaled points data
+        """
+        (camera_width, camera_height) = camera_dimensions
+        new_points = dict()
+        new_points[TOP_X] = int(points[TOP_X]) / camera_width
+        new_points[LEFT_Y] = int(points[LEFT_Y]) / camera_height
+        new_points[BOTTOM_X] = int(points[BOTTOM_X]) / camera_width
+        new_points[RIGHT_Y] = int(points[RIGHT_Y]) / camera_height
+        return new_points
+
     def write_json(self):
         """
-        Writes machine locations that the user chose into the json file
+        Writes machine locations that the user chose into the json file. Also saves existing machines to the DB.
         """
         with open(JSON_LOCATION, 'r') as gym_info:
             gym_dict = json.load(gym_info)
@@ -86,34 +132,20 @@ class CalibrateCam:
         this helps with dealing with variable sizing. We will
         also create new entry's of machines in the database
         """
-        camera_width, camera_height = self.camera.get_dimensions()
-        for machine in self.machines_container[MACHINES]:
-            points = machine[MACHINE_LOCATION]
-            points[TOP_X] = int(points[TOP_X]) / camera_width
-            points[LEFT_Y] = int(points[LEFT_Y]) / camera_height
-            points[BOTTOM_X] = int(points[BOTTOM_X]) / camera_width
-            points[RIGHT_Y] = int(points[RIGHT_Y]) / camera_height
-
-            # Create Machine document in the database
-            result, machine_id = machines_db.create_machine(self.db, gym_dict[GYM_ID], machine)
-            machine[MACHINE_ID] = machine_id
-            """
-            Result is false because machine already exists in database.
-            Update database with the new co-ordinates of machine
-            """
-            if result is False:
-                machines_db.update_machine_location(self.db, gym_dict[GYM_ID], machine_id, points)
+        for machine, raw_location in self.machines_container:
+            # Update Machines document in the Database
+            machine.save()
 
         with open(JSON_LOCATION, 'w') as outfile:
-            gym_dict[MACHINES] = self.machines_container[MACHINES]
+            gym_dict[MACHINES] = [machine.get_fields() for machine, _ in self.machines_container]
             json.dump(gym_dict, outfile, indent=4)
 
     def remove_machine(self):
         """
         Handles the removal of the machine from the list of machines
         """
-        if self.machines_container[MACHINES]:
-            self.machines_container[MACHINES].pop()
+        if self.machines_container:
+            self.machines_container.pop()
 
     def popup_msg(self):
         """
@@ -151,9 +183,8 @@ class CalibrateCam:
             if self.p1 and self.p2:
                 cv2.rectangle(img_temp, self.p1, self.p2, ANNOTATION_COLOUR, 2)
 
-            machines = self.machines_container[MACHINES]
-            for machine in machines:
-                points = machine[MACHINE_LOCATION]
+            for machine, raw_location in self.machines_container:
+                points = raw_location
                 cv2.rectangle(img_temp,
                               (points[TOP_X],
                                points[LEFT_Y]),
@@ -163,7 +194,7 @@ class CalibrateCam:
                               2)
 
                 cv2.putText(img_temp,
-                            machine[MACHINE_NAME],
+                            machine.name,
                             (points[TOP_X],
                              points[RIGHT_Y] - 5),
                             cv2.FONT_HERSHEY_SIMPLEX,
