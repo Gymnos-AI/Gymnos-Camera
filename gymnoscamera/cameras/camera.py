@@ -22,7 +22,7 @@ RIGHT_Y = "RightY"
 
 class Camera(ABC):
 
-    def __init__(self, db, model_path: str):
+    def __init__(self, db, model_type, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
@@ -32,7 +32,7 @@ class Camera(ABC):
         self.camera_width = 256
 
         # initialize the Predictor
-        self.predictor = predictors.Predictors('YOLOV3RT', model_path)
+        self.predictor = predictors.Predictors(model_type, model_path)
 
         # initialize stations
         self.stations = []

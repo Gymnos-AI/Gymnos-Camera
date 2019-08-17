@@ -14,13 +14,21 @@ cred = credentials.Certificate('./serviceAccount.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+model_types = [
+    'HOG',
+    'YOLOV3',
+    'YOLOV3RT'
+]
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('model_type', help='A file path to a model file',
+                        action='store')
     parser.add_argument('--configure', help='If true',
                         action='store_true')
-    parser.add_argument('--model', help='A file path to a model file',
+    parser.add_argument('--model_location', help='A file path to a model file',
                         action='store', required=True)
     parser.add_argument('--usbcam', help='Use a USB webcam instead of picamera',
                         action='store_true')
@@ -49,10 +57,14 @@ def main():
     else:
         camera_type = 'pi'
 
-    model_path = os.path.abspath(args.model)
+    model_type = args.model_type
+    if model_type not in model_types:
+        raise ValueError('Use one of the following Model types: ' + str(model_types))
+
+    model_path = os.path.abspath(args.model_location)
 
     # Get the selected camera
-    camera = camera_factory.factory.get_camera(db, camera_type, model_path)
+    camera = camera_factory.factory.get_camera(db, camera_type, model_type, model_path)
 
     if args.configure:
         calibrate = CalibrateCam.CalibrateCam(db, camera, args.mac)
