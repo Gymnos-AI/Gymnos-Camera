@@ -126,7 +126,7 @@ class Camera(ABC):
         :param image: frame we will run predictions on
         :return: list of the coordinates of each person our model detects
         """
-        list_of_coords = self.predictor.yolo_v3_rt(image)
+        list_of_coords = self.predictor.run_prediction(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
             cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
 

@@ -5,6 +5,11 @@ from timeit import default_timer as timer
 
 
 class Predictors:
+    """
+    Before you run the YOLO Detectors, download the models from:
+    https://drive.google.com/drive/folders/1fibgr4c2CUMItWOngjTxwhqSzsHXBXvT
+    and place it in a location that you will provide as an argument to run_camera.py
+    """
     def __init__(self, model_type, model_path: str):
         if model_type == 'HOG':
             print("Using CV2 Hog Detector")
@@ -35,21 +40,8 @@ class Predictors:
 
         return to_predict
 
-    def yolo_v3_detector(self, to_predict):
+    def run_prediction(self, to_predict):
         """
-        Before you run the YOLO Detector, download the models from:
-        https://drive.google.com/drive/folders/1fibgr4c2CUMItWOngjTxwhqSzsHXBXvT
-        and place it in a location that you will provide as an argument to run_camera.py
-
-        :param to_predict: The frame we would like to run prediction on
-        :return:
-        """
-        return np.asarray(self.model.detect_image(to_predict))
-
-    def yolo_v3_rt(self, to_predict):
-        """
-
-        :param to_predict:
-        :return:
+        Run prediction on Frame
         """
         return np.asarray(self.model.detect_image(to_predict))
