@@ -24,6 +24,7 @@ class YOLO(object):
         "iou": 0.45,
         "model_image_size": (256, 256),
         "gpu_num": 1,
+        "score_threshold": 0.30
     }
 
     @classmethod
@@ -120,8 +121,10 @@ class YOLO(object):
         list_of_coords = []
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
+            score = out_scores[i]
 
-            if predicted_class == "person":
+            if predicted_class == "person" and score > self.score_threshold:
+                # print(out_scores[i])
                 box = out_boxes[i]
 
                 top, left, bottom, right = box
