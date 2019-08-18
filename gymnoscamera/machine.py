@@ -45,7 +45,7 @@ class Machine:
         self.first_detected = 0
         self.time_elapsed = 0
         self.last_seen_unix = 0
-        self.last_seen_threshold = 2
+        self.last_seen_threshold = 3
         """
         Padding will deal with the case a user moves slightly out of the machine
         but we still want to detect them as using the machine
@@ -240,3 +240,5 @@ class Machine:
             return True
         else:
             return False
+
+    # Add function to calculate overlapping machines

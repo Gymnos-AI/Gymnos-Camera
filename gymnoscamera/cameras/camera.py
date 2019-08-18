@@ -92,13 +92,14 @@ class Camera(ABC):
             image, frame_cap_time = self.get_frame()
 
             # Draw machines and users
-            self.draw_machines(image)
             if not self.view_only:
                 people_coords = self.draw_people(image)
 
                 # Calculate station usage
                 for station in self.stations:
                     station.increment_machine_time(people_coords, image, frame_cap_time)
+
+            self.draw_machines(image)
 
             if not self.headless_mode:
                 cv2.imshow("Video Feed", image)
