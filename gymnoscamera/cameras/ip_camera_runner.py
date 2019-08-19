@@ -23,7 +23,6 @@ class IpCameraRunner(Camera):
         # connect to the stream
         url = 'rtsp://{}:{}@{}:{}/{}'.format(user, password, ip_address, port, stream)
         self.camera = cv2.VideoCapture(url)
-        print(self.camera)
         time.sleep(0.5)
 
         self.waiting_to_aquire = False
