@@ -23,6 +23,7 @@ class IpCameraRunner(Camera):
         # connect to the stream
         url = 'rtsp://{}:{}@{}:{}/{}'.format(user, password, ip_address, port, stream)
         self.camera = cv2.VideoCapture(url)
+        print(self.camera)
         time.sleep(0.5)
 
         self.waiting_to_aquire = False
@@ -54,11 +55,11 @@ class IpCameraRunner(Camera):
             image = cv2.resize(image, (self.camera_height, self.camera_width))
         except cv2.error as e:
             image = np.zeros([self.camera_height, self.camera_width, 3])
-            print(e)
+            print("Error getting frame: " + e)
+            time.sleep(0.5)
             # connect to the stream
             url = 'rtsp://{}:{}@{}:{}/{}'.format(user, password, ip_address, port, stream)
             self.camera = cv2.VideoCapture(url)
-            time.sleep(0.5)
             # Write this error to the database
 
         return image, frame_time
