@@ -2,7 +2,6 @@ import json
 import os
 from abc import ABC
 import time
-import numpy as np
 
 import cv2
 from gymnos_firestore import machines
@@ -13,26 +12,31 @@ JSON_LOCATION = "../gym_info.json"
 GYM_ID = "GymID"
 MACHINES = "Machines"
 MACHINE_ID = "MachineID"
+MACHINE_OPEN = "Open"
 MACHINE_NAME = "Name"
 MACHINE_LOCATION = "Location"
 
 
 class Camera(ABC):
 
-    def __init__(self, model_path: str):
+    def __init__(self, model_type:str, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
         """
+        self.headless_mode = False
+        self.view_only = False
+
         # initialize general camera params
         self.camera_height = 256
         self.camera_width = 256
 
         # initialize the Predictor
-        self.predictor = predictors.Predictors('YOLOV3', model_path)
+        self.predictor = predictors.Predictors(model_type, model_path)
 
         # initialize stations
         self.stations = []
+        self.set_stations()
 
     def set_stations(self):
         """
@@ -75,27 +79,36 @@ class Camera(ABC):
         """
         This main loop tracks machine usage
         """
-        # initialize the Widgets
-        self.set_stations()
         while True:
             # Retrieve a frame and timestamp it
-            image = self.get_frame()
-            frame_cap_time = self.get_time()
+            image, frame_cap_time = self.get_frame()
 
             # Draw machines and users
+            if not self.view_only:
+                people_coords = self.draw_people(image)
+
+                # Calculate station usage
+                for station in self.stations:
+                    station.increment_machine_time(people_coords, image, frame_cap_time)
+
             self.draw_machines(image)
-            people_coords = self.draw_people(image)
 
-            # Calculate station usage
-            for station in self.stations:
-                station.increment_machine_time(people_coords, frame_cap_time)
+            if not self.headless_mode:
+                cv2.imshow("Video Feed", image)
 
-            image = np.asarray(image)
-            cv2.imshow("Video Feed", image)
+                # Press 'q' to quit
+                if cv2.waitKey(1) == ord('q'):
+                    break
 
-            # Press 'q' to quit
-            if cv2.waitKey(1) == ord('q'):
-                break
+    def set_view_only(self):
+        print("Setting to View only")
+        self.view_only = True
+        for station in self.stations:
+            station.watch_machine_status()
+
+    def set_headless(self):
+        print("Setting Headless Mode on")
+        self.headless_mode = True
 
     def get_time(self):
         """
@@ -116,7 +129,7 @@ class Camera(ABC):
         :param image: frame we will run predictions on
         :return: list of the coordinates of each person our model detects
         """
-        list_of_coords = self.predictor.yolo_v3_detector(image)
+        list_of_coords = self.predictor.run_prediction(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
             cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
 

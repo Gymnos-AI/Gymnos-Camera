@@ -10,8 +10,8 @@ class PiCameraRunner(Camera):
     """
     An implementation of a Camera runner which sources its camera from a Pi Camera
     """
-    def __init__(self, model_path: str):
-        super().__init__(model_path)
+    def __init__(self, model_type: str, model_path: str):
+        super().__init__(model_type, model_path)
 
         # initialize the HOG descriptor/person detector
         self.camera = PiCamera()
@@ -28,4 +28,4 @@ class PiCameraRunner(Camera):
         frame = self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
         image = frame.array
 
-        return image
+        return image, time.time()

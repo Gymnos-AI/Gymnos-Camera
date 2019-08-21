@@ -1,21 +1,16 @@
-# -*- coding: utf-8 -*-
-"""
-Class definition of YOLO_v3 style detection model on image and video
-"""
-
+import tensorflow as tf
 import colorsys
-import os
-
 import numpy as np
+import os
+from gymnoscamera.yolo_network.model import yolo_eval
 from keras import backend as K
-from keras.layers import Input
-from keras.models import load_model
-from keras.utils import multi_gpu_model
 
-from gymnoscamera.yolo_network.model import yolo_eval, yolo_body, tiny_yolo_body
+input_names = ['input_1']
+output_names = ['conv2d_59/BiasAdd', 'conv2d_67/BiasAdd', 'conv2d_75/BiasAdd']
 
 
-class YOLO(object):
+class Yolo_v3_rt:
+
     _defaults = {
         "model_path": None,
         "anchors_path": 'model_data/yolo_anchors.txt',
@@ -24,33 +19,50 @@ class YOLO(object):
         "iou": 0.45,
         "model_image_size": (256, 256),
         "gpu_num": 1,
-        "score_threshold": 0.30
     }
 
-    @classmethod
-    def get_defaults(cls, n):
-        if n in cls._defaults:
-            return cls._defaults[n]
-        else:
-            return "Unrecognized attribute name '" + n + "'"
-
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.__dict__.update(self._defaults)  # set up default values
-        self.__dict__.update(kwargs)  # and update with user overrides
 
-        if not self.model_path:
-            raise ValueError("Argument 'model_path' must be overridden to use YoloV3!")
+        self.tf_sess = self.load_tf_rt_graph()
+
+        self.output_tensor = []
+        self.output_tensor.append(self.tf_sess.graph.get_tensor_by_name('conv2d_59/BiasAdd:0'))
+        self.output_tensor.append(self.tf_sess.graph.get_tensor_by_name('conv2d_67/BiasAdd:0'))
+        self.output_tensor.append(self.tf_sess.graph.get_tensor_by_name('conv2d_75/BiasAdd:0'))
+
+        self.input_tensor = self.tf_sess.graph.get_tensor_by_name('input_1:0')
 
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
-        self.sess = K.get_session()
         self.boxes, self.scores, self.classes = self.generate()
+
+    def get_frozen_graph(self, graph_file):
+        """Read Frozen Graph file from disk."""
+        with tf.gfile.FastGFile(graph_file, "rb") as f:
+            graph_def = tf.GraphDef()
+            graph_def.ParseFromString(f.read())
+        return graph_def
+
+    def load_tf_rt_graph(self):
+        tf.keras.backend.clear_session()
+
+        trt_graph = self.get_frozen_graph('./trt_graph.pb')
+
+        # Create session and load graph
+        tf_config = tf.ConfigProto()
+        tf_config.gpu_options.allow_growth = True
+        tf_sess = tf.Session(config=tf_config)
+        tf.import_graph_def(trt_graph, name='')
+
+        return tf_sess
 
     def _get_class(self):
         classes_path = os.path.expanduser(os.path.join(os.path.dirname(__file__), self.classes_path))
         with open(classes_path) as f:
             class_names = f.readlines()
         class_names = [c.strip() for c in class_names]
+
         return class_names
 
     def _get_anchors(self):
@@ -58,30 +70,10 @@ class YOLO(object):
         with open(anchors_path) as f:
             anchors = f.readline()
         anchors = [float(x) for x in anchors.split(',')]
+
         return np.array(anchors).reshape(-1, 2)
 
     def generate(self):
-        # Model path is supplied externally
-        model_path = os.path.expanduser(self.model_path)
-        assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
-
-        # Load model, or construct model and load weights.
-        num_anchors = len(self.anchors)
-        num_classes = len(self.class_names)
-        is_tiny_version = num_anchors == 6  # default setting
-        try:
-            self.yolo_model = load_model(model_path, compile=False)
-        except:
-            self.yolo_model = tiny_yolo_body(Input(shape=(None, None, 3)), num_anchors // 2, num_classes) \
-                if is_tiny_version else yolo_body(Input(shape=(None, None, 3)), num_anchors // 3, num_classes)
-            self.yolo_model.load_weights(self.model_path)  # make sure model, anchors and classes match
-        else:
-            assert self.yolo_model.layers[-1].output_shape[-1] == \
-                   num_anchors / len(self.yolo_model.output) * (num_classes + 5), \
-                'Mismatch between model and given anchor and class sizes'
-
-        print('{} model, anchors, and classes loaded.'.format(model_path))
-
         # Generate colors for drawing bounding boxes.
         hsv_tuples = [(x / len(self.class_names), 1., 1.)
                       for x in range(len(self.class_names))]
@@ -95,11 +87,11 @@ class YOLO(object):
 
         # Generate output tensor targets for filtered bounding boxes.
         self.input_image_shape = K.placeholder(shape=(2,))
-        if self.gpu_num >= 2:
-            self.yolo_model = multi_gpu_model(self.yolo_model, gpus=self.gpu_num)
-        boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
+
+        boxes, scores, classes = yolo_eval(self.output_tensor, self.anchors,
                                            len(self.class_names), self.input_image_shape,
                                            score_threshold=self.score, iou_threshold=self.iou)
+
         return boxes, scores, classes
 
     def detect_image(self, image):
@@ -110,21 +102,18 @@ class YOLO(object):
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
 
-        out_boxes, out_scores, out_classes = self.sess.run(
+        out_boxes, out_scores, out_classes = self.tf_sess.run(
             [self.boxes, self.scores, self.classes],
             feed_dict={
-                self.yolo_model.input: image_data,
+                self.input_tensor: image_data,
                 self.input_image_shape: [image_height, image_width],
-                K.learning_phase(): 0
             })
-
+        print(out_boxes.shape)
         list_of_coords = []
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
-            score = out_scores[i]
 
-            if predicted_class == "person" and score > self.score_threshold:
-                # print(out_scores[i])
+            if predicted_class == "person":
                 box = out_boxes[i]
 
                 top, left, bottom, right = box
@@ -132,10 +121,7 @@ class YOLO(object):
                 left = max(0, np.floor(left + 0.5).astype('int32'))
                 bottom = min(image_height, np.floor(bottom + 0.5).astype('int32'))
                 right = min(image_width, np.floor(right + 0.5).astype('int32'))
+
                 list_of_coords.append((left + i, top + i, right - i, bottom - i))
 
         return list_of_coords
-
-
-def close_session(self):
-    self.sess.close()

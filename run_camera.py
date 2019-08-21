@@ -10,6 +10,12 @@ from gymnoscamera.cameras import CalibrateCam
 # Initialize orm
 database.db_initialization('./serviceAccount.json')
 
+model_types = [
+    'HOG',
+    'YOLOV3',
+    'YOLOV3RT'
+]
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -22,9 +28,19 @@ def parse_args():
                         action='store')
     parser.add_argument('--mac', help='Using a mac',
                         action='store_true')
-    parser.add_argument('--model', help='A file path to a model file',
+    parser.add_argument('--model_location', help='A file path to a model file',
                         action='store', required=True)
+    parser.add_argument('--model_type', help='Choose from [HOG, YOLOV3, YOLOV3RT]',
+                        action='store')
     parser.add_argument('--usbcam', help='Use a USB webcam instead of picamera',
+                        action='store_true')
+    parser.add_argument('--ipcam', help='Use an IP webcam',
+                        action='store_true')
+    parser.add_argument('--mac', help='Using a mac',
+                        action='store_true')
+    parser.add_argument('--headless', help='Run the algorithm without GUI',
+                        action='store_true')
+    parser.add_argument('--view_only', help='View camera without running algorithm',
                         action='store_true')
 
     return parser.parse_args()
@@ -56,10 +72,18 @@ def main():
     """
     args = parse_args()
 
-    camera_type = 'pi'
     if args.usbcam:
         camera_type = 'usb'
-    model_path = os.path.abspath(args.model)
+    elif args.ipcam:
+        camera_type = 'ip'
+    else:
+        camera_type = 'pi'
+
+    model_type = args.model_type
+    if model_type not in model_types:
+        raise ValueError('Use one of the following Model types: ' + str(model_types))
+
+    model_path = os.path.abspath(args.model_location)
 
     # Get the gym
     gym = get_gym(args.gym, args.location)
@@ -73,7 +97,13 @@ def main():
         gyms.Gyms.collection_name(), gym.id, usage.Usage.collection_name())
 
     # Get the selected camera
-    camera = camera_factory.factory.get_camera(camera_type, model_path)
+    camera = camera_factory.factory.get_camera(camera_type, model_type, model_path)
+
+    if args.headless:
+        camera.set_headless()
+
+    if args.view_only:
+        camera.set_view_only()
 
     if args.configure:
         # TODO: Add option to read from gymnos_info.json file to retrieve machines locally instead of querying the DB.

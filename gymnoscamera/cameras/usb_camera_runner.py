@@ -11,8 +11,8 @@ class UsbCameraRunner(Camera):
     """
     An implementation of a Camera runner which sources its camera from a USB camera
     """
-    def __init__(self, model_path: str):
-        super().__init__(model_path)
+    def __init__(self, model_type: str, model_path: str):
+        super().__init__(model_type, model_path)
 
         # initialize the camera
         self.camera = cv2.VideoCapture(0)
@@ -25,4 +25,4 @@ class UsbCameraRunner(Camera):
         ret, image = self.camera.read()
         image = cv2.resize(image, (self.camera_height, self.camera_width))
 
-        return image
+        return image, time.time()
