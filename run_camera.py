@@ -26,11 +26,9 @@ def parse_args():
                         action='store')
     parser.add_argument('--location', help='Which gym location to attempt to connect to',
                         action='store')
-    parser.add_argument('--mac', help='Using a mac',
-                        action='store_true')
-    parser.add_argument('--model_location', help='A file path to a model file',
+    parser.add_argument('--model-location', help='A file path to a model file',
                         action='store', required=True)
-    parser.add_argument('--model_type', help='Choose from [HOG, YOLOV3, YOLOV3RT]',
+    parser.add_argument('--model-type', help='Choose from [HOG, YOLOV3, YOLOV3RT]',
                         action='store')
     parser.add_argument('--usbcam', help='Use a USB webcam instead of picamera',
                         action='store_true')
@@ -40,7 +38,7 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--headless', help='Run the algorithm without GUI',
                         action='store_true')
-    parser.add_argument('--view_only', help='View camera without running algorithm',
+    parser.add_argument('--view-only', help='View camera without running algorithm',
                         action='store_true')
 
     return parser.parse_args()

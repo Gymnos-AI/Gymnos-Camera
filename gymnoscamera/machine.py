@@ -123,7 +123,7 @@ class Machine:
         # if there is somebody in the machine
         if person_inside:
             self.last_seen_unix = image_cap_time
-            if self.inside is False:
+            if not self.inside:
                 self.inside = True
                 self.first_detected = image_cap_time
             elif self.inside and not self.using:
@@ -226,7 +226,8 @@ class Machine:
         p_bottom_x = person[2] - self.padding
         p_right_y = person[3] - self.padding
 
-        if p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x and p_right_y <= self.right_y:
+        if p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x and p_right_y <= self.right_y \
+                or p_top_x < self.top_x and p_left_y < self.left_y and p_bottom_x > self.bottom_x and p_right_y > self.right_y:
             return True
         else:
             return False

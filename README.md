@@ -15,9 +15,11 @@ To run this library standalone:
 
 Possible run options:
 ```
-model_type = 
 --configure = To configure machines info in gym_info.json
---model_location = Path to Yolo model from your working directory
+--gym = Gym to use (e.g. Golds Gym)
+--location = Gym location to use (e.g. NW)
+--model-type = Type of model to use
+--model-location = Path to a model from your working directory
 --usbcam = If you are running this library on Laptop or USB camera
 --ipcam = If you want to connect to the Security Camera
 --mac = If you are running this library on a mac
@@ -26,11 +28,11 @@ model_type =
 ```
 1. Run the camera with the --configure parameter to initialize the Machines array
     ```
-    python3 run_camera.py model_type --model_location yolo.h5 --usb --configure
+    python3 run_camera.py --model-type YOLOV3 --model_location yolo.h5 --usb --configure --gym "Golds Gym" --location NW
     ```
 2. Run the library
     ```
-    python3 run_camera.py model_type --model_location yolo.h5 --usbcam
+    python3 run_camera.py --model-type YOLOV3 --model_location yolo.h5 --usbcam --gym "Golds Gym" --location NW
     ```
 
 ### Installation

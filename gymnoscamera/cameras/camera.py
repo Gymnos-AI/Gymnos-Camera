@@ -89,7 +89,7 @@ class Camera(ABC):
 
                 # Calculate station usage
                 for station in self.stations:
-                    station.increment_machine_time(people_coords, image, frame_cap_time)
+                    station.increment_machine_time(people_coords, frame_cap_time)
 
             self.draw_machines(image)
 
