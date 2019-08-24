@@ -1,5 +1,7 @@
 import argparse
 import os
+import logging
+from datetime import date
 
 from gymnoscamera.cameras import camera_factory
 from gymnoscamera.cameras import CalibrateCam
@@ -19,6 +21,20 @@ model_types = [
     'YOLOV3',
     'YOLOV3RT'
 ]
+
+try:
+    os.mkdir('/tmp/gymnos_camera')
+except OSError:
+    print ("Creation of the directory %s failed" % '/tmp/gymnos_camera')
+else:
+    print ("Successfully created the directory %s " % '/tmp/gymnos_camera')
+
+today = date.today()
+file_name = '/tmp/gymnos_camera/{}.log'.format(today)
+logging.basicConfig(format = '%(asctime)s - %(message)s',
+                    datefmt = '%d-%b-%y %H:%M:%S',
+                    filename=file_name,
+                    level=logging.INFO)
 
 
 def parse_args():
@@ -52,11 +68,9 @@ def main():
 
     :return:
     """
-    args = parse_args()
 
-    headless_mode = False
-    if args.headless:
-        headless_mode = True
+    args = parse_args()
+    logging.info("Starting GymnosCamera with: " + str(args))
 
     if args.usbcam:
         camera_type = 'usb'

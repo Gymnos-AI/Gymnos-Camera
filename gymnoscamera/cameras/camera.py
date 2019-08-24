@@ -2,9 +2,9 @@ import json
 import os
 from abc import ABC
 import time
-import logging
-from datetime import date
 import cv2
+import logging
+
 from gymnoscamera import machine, predictors
 
 JSON_LOCATION = "../gym_info.json"
@@ -18,17 +18,6 @@ TOP_X = "TopX"
 LEFT_Y = "LeftY"
 BOTTOM_X = "BottomX"
 RIGHT_Y = "RightY"
-
-try:
-    os.mkdir('/tmp/gymnos_camera')
-except OSError:
-    print ("Creation of the directory %s failed" % '/tmp/gymnos_camera')
-else:
-    print ("Successfully created the directory %s " % '/tmp/gymnos_camera')
-
-today = date.today()
-file_name = '/tmp/gymnos_camera/{}.log'.format(today)
-logging.basicConfig(filename=file_name, level=logging.INFO)
 
 
 class Camera(ABC):
@@ -48,6 +37,8 @@ class Camera(ABC):
         self.camera_height = 256
         self.camera_width = 256
 
+        self.check_in_period = 60
+
         # initialize the Predictor
         self.predictor = predictors.Predictors(model_type, model_path)
 
@@ -55,12 +46,12 @@ class Camera(ABC):
         self.stations = []
         self.set_stations()
 
-
     def set_stations(self):
         for station in self.get_stations():
             self.stations.append(machine.Machine(self.db, station,
                                                  self.camera_width,
                                                  self.camera_height))
+        logging.info("Stations used: " + str(self.get_stations()))
 
     def get_stations(self):
         """
@@ -108,6 +99,9 @@ class Camera(ABC):
             # Retrieve a frame and timestamp it
             image, frame_cap_time = get_frame()
 
+            if int(frame_cap_time) % self.check_in_period == 0:
+                logging.info("Camera checking in")
+
             if not self.view_only:
                 people_coords = draw_people(image)
 
@@ -125,13 +119,13 @@ class Camera(ABC):
                     break
 
     def set_view_only(self):
-        print("Setting to View only")
+        logging.info("Setting view only mode")
         self.view_only = True
         for station in self.stations:
             station.watch_machine_status()
 
     def set_head_less(self):
-        print("Setting Headless Mode on")
+        logging.info("Setting headless mode")
         self.headless_mode = True
 
     def get_time(self):

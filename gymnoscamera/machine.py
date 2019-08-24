@@ -1,6 +1,7 @@
 import cv2
 import gymnos_firestore.Machines as machines
 import threading
+import logging
 
 # Gym collection keys
 GYM_COLLECTION = u'Gyms'
@@ -159,7 +160,7 @@ class Machine:
                 if self.using:
                     self.using = False
                     self.time_used += image_cap_time - self.first_detected
-                    print("Used for: " + str(image_cap_time - self.first_detected))
+                    logging.info("Used for: " + str(image_cap_time - self.first_detected))
 
                     # Send to database
                     db_thread = threading.Thread(target=self.send_usage_to_database, args=[image_cap_time])
