@@ -38,6 +38,8 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--headless', help='Run the algorithm without GUI',
                         action='store_true')
+    parser.add_argument('--view_only', help='View camera without running algorithm',
+                        action='store_true')
 
     return parser.parse_args()
 
@@ -70,7 +72,13 @@ def main():
     model_path = os.path.abspath(args.model_location)
 
     # Get the selected camera
-    camera = camera_factory.factory.get_camera(db, camera_type, model_type, model_path, headless_mode)
+    camera = camera_factory.factory.get_camera(db, camera_type, model_type, model_path)
+
+    if args.headless:
+        camera.set_head_less()
+
+    if args.view_only:
+        camera.set_view_only()
 
     if args.configure:
         calibrate = CalibrateCam.CalibrateCam(db, camera, args.mac)

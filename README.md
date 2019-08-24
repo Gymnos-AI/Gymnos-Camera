@@ -22,6 +22,7 @@ model_type =
 --ipcam = If you want to connect to the Security Camera
 --mac = If you are running this library on a mac
 --headless = Run without GUI
+--view_only = Run without using the model
 ```
 1. Run the camera with the --configure parameter to initialize the Machines array
     ```

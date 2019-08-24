@@ -2,18 +2,16 @@ import json
 import os
 from abc import ABC
 import time
-import numpy as np
 import logging
 from datetime import date
-
 import cv2
-
 from gymnoscamera import machine, predictors
 
 JSON_LOCATION = "../gym_info.json"
 GYM_ID = "GymID"
 MACHINES = "Machines"
 MACHINE_ID = "MachineID"
+MACHINE_OPEN = "Open"
 MACHINE_NAME = "Name"
 MACHINE_LOCATION = "Location"
 TOP_X = "TopX"
@@ -35,12 +33,16 @@ logging.basicConfig(filename=file_name, level=logging.INFO)
 
 class Camera(ABC):
 
-    def __init__(self, db, model_type, model_path: str, headless_mode):
+    def __init__(self, db, model_type, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
         """
-        self.headless_mode = headless_mode
+        self.db = db
+
+        self.headless_mode = False
+
+        self.view_only = False
 
         # initialize general camera params
         self.camera_height = 256
@@ -51,8 +53,8 @@ class Camera(ABC):
 
         # initialize stations
         self.stations = []
+        self.set_stations()
 
-        self.db = db
 
     def set_stations(self):
         for station in self.get_stations():
@@ -97,27 +99,23 @@ class Camera(ABC):
         """
         This main loop tracks machine usage
         """
-        # initialize the Widgets
-        self.set_stations()
         draw_people = self.draw_people
-        get_time = time.time
         draw_machines = self.draw_machines
+        get_frame = self.get_frame
         show_feed = cv2.imshow
+
         while True:
             # Retrieve a frame and timestamp it
-            image, frame_cap_time = self.get_frame()
+            image, frame_cap_time = get_frame()
 
-            # Draw machines and users
+            if not self.view_only:
+                people_coords = draw_people(image)
+
+                # Calculate station usage
+                for station in self.stations:
+                    station.increment_machine_time(people_coords, image, frame_cap_time)
+
             draw_machines(image)
-            start_time = get_time()
-            people_coords = draw_people(image)
-            end_time = get_time()
-            logging.info('Network took: {:3.10f}'.format(end_time - start_time))
-            #print("Network took: " + str(end_time - start_time))
-
-            # Calculate station usage
-            for station in self.stations:
-                station.increment_machine_time(people_coords, image, frame_cap_time)
 
             if not self.headless_mode:
                 show_feed("Video Feed", image)
@@ -125,6 +123,16 @@ class Camera(ABC):
                 # Press 'q' to quit
                 if cv2.waitKey(1) == ord('q'):
                     break
+
+    def set_view_only(self):
+        print("Setting to View only")
+        self.view_only = True
+        for station in self.stations:
+            station.watch_machine_status()
+
+    def set_head_less(self):
+        print("Setting Headless Mode on")
+        self.headless_mode = True
 
     def get_time(self):
         """

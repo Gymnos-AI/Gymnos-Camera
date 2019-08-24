@@ -11,6 +11,7 @@ import gymnos_firestore.Machines as machines_db
 GYM_ID = "GymID"
 MACHINES = "Machines"
 MACHINE_ID = "MachineID"
+MACHINE_OPEN = "Open"
 MACHINE_NAME = "Name"
 MACHINE_LOCATION = "Location"
 TOP_X = "TopX"
@@ -63,6 +64,7 @@ class CalibrateCam:
                 self.machines_container[MACHINES].append(
                     {MACHINE_NAME: machine_name,
                      MACHINE_ID: "",
+                     MACHINE_OPEN: True,
                      MACHINE_LOCATION: {
                          TOP_X: self.p1[0],
                          LEFT_Y: self.p1[1],
