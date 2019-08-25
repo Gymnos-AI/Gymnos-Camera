@@ -23,7 +23,7 @@ model_types = [
     'YOLOV3RT'
 ]
 
-log_location = expanduser("~") + '/tmp/gymnos_camera'
+log_location = expanduser("~") + '/logs/gymnos_camera'
 try:
     os.makedirs(log_location)
 except OSError:
