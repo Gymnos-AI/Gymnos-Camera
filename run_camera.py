@@ -2,6 +2,7 @@ import argparse
 import os
 import logging
 from datetime import date
+from os.path import expanduser
 
 from gymnoscamera.cameras import camera_factory
 from gymnoscamera.cameras import CalibrateCam
@@ -22,17 +23,18 @@ model_types = [
     'YOLOV3RT'
 ]
 
+log_location = expanduser("~") + '/tmp/gymnos_camera'
 try:
-    os.mkdir('/tmp/gymnos_camera')
+    os.makedirs(log_location)
 except OSError:
-    print ("Creation of the directory %s failed" % '/tmp/gymnos_camera')
+    print("Creation of the directory %s failed" % log_location)
 else:
-    print ("Successfully created the directory %s " % '/tmp/gymnos_camera')
+    print("Successfully created the directory %s " % log_location)
 
 today = date.today()
-file_name = '/tmp/gymnos_camera/{}.log'.format(today)
-logging.basicConfig(format = '%(asctime)s - %(message)s',
-                    datefmt = '%d-%b-%y %H:%M:%S',
+file_name = '{}/{}.log'.format(log_location, today)
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S',
                     filename=file_name,
                     level=logging.INFO)
 
