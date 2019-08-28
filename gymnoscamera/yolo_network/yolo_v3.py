@@ -124,7 +124,6 @@ class YOLO(object):
             score = out_scores[i]
 
             if predicted_class == "person" and score > self.score_threshold:
-                # print(out_scores[i])
                 box = out_boxes[i]
 
                 top, left, bottom, right = box

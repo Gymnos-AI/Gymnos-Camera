@@ -2,10 +2,10 @@ import json
 import os
 from abc import ABC
 import time
-
 import cv2
 from gymnos_firestore import machines
 from gymnos_firestore.machines import MACHINE_COLLECTION
+import logging
 
 from gymnoscamera import machine, predictors
 
@@ -26,6 +26,8 @@ class Camera(ABC):
         self.camera_height = 256
         self.camera_width = 256
 
+        self.check_in_period = 60
+
         # initialize the Predictor
         self.predictor = predictors.Predictors(model_type, model_path)
 
@@ -40,6 +42,7 @@ class Camera(ABC):
         """
         for station in self.get_configured_machines():
             self.stations.append(machine.Machine(station, self.camera_width, self.camera_height))
+        logging.info("Stations used: " + str(self.get_stations()))
 
     def get_configured_machines(self):
         """
@@ -48,6 +51,7 @@ class Camera(ABC):
 
         :return: stations: [machine model]
         """
+
         stations = []
         with open(os.path.join(os.path.dirname(__file__), JSON_LOCATION)) as json_file:
             data = json.load(json_file)
@@ -73,35 +77,42 @@ class Camera(ABC):
         """
         This main loop tracks machine usage
         """
+        draw_people = self.draw_people
+        draw_machines = self.draw_machines
+        get_frame = self.get_frame
+        show_feed = cv2.imshow
+
         while True:
             # Retrieve a frame and timestamp it
-            image, frame_cap_time = self.get_frame()
+            image, frame_cap_time = get_frame()
 
-            # Draw machines and users
+            if int(frame_cap_time) % self.check_in_period == 0:
+                logging.info("Camera checking in")
+
             if not self.view_only:
-                people_coords = self.draw_people(image)
+                people_coords = draw_people(image)
 
                 # Calculate station usage
                 for station in self.stations:
                     station.increment_machine_time(people_coords, frame_cap_time)
 
-            self.draw_machines(image)
+            draw_machines(image)
 
             if not self.headless_mode:
-                cv2.imshow("Video Feed", image)
+                show_feed("Video Feed", image)
 
                 # Press 'q' to quit
                 if cv2.waitKey(1) == ord('q'):
                     break
 
     def set_view_only(self):
-        print("Setting to View only")
+        logging.info("Setting view only mode")
         self.view_only = True
         for station in self.stations:
             station.watch_machine_status()
 
     def set_headless(self):
-        print("Setting Headless Mode on")
+        logging.info("Setting headless mode")
         self.headless_mode = True
 
     def get_time(self):
@@ -123,9 +134,10 @@ class Camera(ABC):
         :param image: frame we will run predictions on
         :return: list of the coordinates of each person our model detects
         """
+        rectanglefy = cv2.rectangle
         list_of_coords = self.predictor.run_prediction(image)
         for (topX, leftY, bottomX, rightY) in list_of_coords:
-            cv2.rectangle(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
+            rectanglefy(image, (topX, leftY), (bottomX, rightY), (0, 0, 255), 2)
 
         return list_of_coords
 

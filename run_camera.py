@@ -1,5 +1,8 @@
 import argparse
 import os
+import logging
+from datetime import date
+from os.path import expanduser
 
 from gymnos_firestore import gyms, machines, usage
 from matchbox import database
@@ -15,6 +18,21 @@ model_types = [
     'YOLOV3',
     'YOLOV3RT'
 ]
+
+log_location = expanduser("~") + '/logs/gymnos_camera'
+try:
+    os.makedirs(log_location)
+except OSError:
+    print("Creation of the directory %s failed" % log_location)
+else:
+    print("Successfully created the directory %s " % log_location)
+
+today = date.today()
+file_name = '{}/{}.log'.format(log_location, today)
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S',
+                    filename=file_name,
+                    level=logging.INFO)
 
 
 def parse_args():
@@ -68,7 +86,10 @@ def main():
 
     :return:
     """
+
     args = parse_args()
+
+    logging.info("Starting GymnosCamera with: " + str(args))
 
     if args.usbcam:
         camera_type = 'usb'

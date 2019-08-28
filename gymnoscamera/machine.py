@@ -1,5 +1,6 @@
 import datetime
 import threading
+import logging
 
 import cv2
 import gymnos_firestore.machines as machines
@@ -152,7 +153,7 @@ class Machine:
                 if self.using:
                     self.using = False
                     self.time_used += image_cap_time - self.first_detected
-                    print("Used for: " + str(image_cap_time - self.first_detected))
+                    logging.info("Used for: " + str(image_cap_time - self.first_detected))
 
                     # Send to database
                     start_time, end_time = self.first_detected, image_cap_time
