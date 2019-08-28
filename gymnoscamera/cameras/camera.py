@@ -5,16 +5,11 @@ import time
 
 import cv2
 from gymnos_firestore import machines
+from gymnos_firestore.machines import MACHINE_COLLECTION
 
 from gymnoscamera import machine, predictors
 
 JSON_LOCATION = "../gym_info.json"
-GYM_ID = "GymID"
-MACHINES = "Machines"
-MACHINE_ID = "MachineID"
-MACHINE_OPEN = "Open"
-MACHINE_NAME = "Name"
-MACHINE_LOCATION = "Location"
 
 
 class Camera(ABC):
@@ -56,12 +51,11 @@ class Camera(ABC):
         stations = []
         with open(os.path.join(os.path.dirname(__file__), JSON_LOCATION)) as json_file:
             data = json.load(json_file)
-            for machine_data in data[MACHINES]:
+            for machine_data in data[MACHINE_COLLECTION]:
                 machine_model = machines.Machines()
                 machine_model.id = machine_data['id']
-                machine_model.machine_id = machine_data['machine_id']
-                machine_model.name = machine_data['name']
-                machine_model.location = machine_data['location']
+                machine_model.name = machine_data[machines.MACHINE_NAME]
+                machine_model.location = machine_data[machines.MACHINE_LOC]
 
                 stations.append(machine_model)
 

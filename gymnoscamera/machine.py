@@ -16,6 +16,7 @@ class Machine:
     """
     This class keeps track of machine coordinates and machine usage
     """
+
     def __init__(self, station: machines.Machines, camera_width, camera_height):
         (top_x, left_y, bottom_x, right_y) = self.convert_station_ratios(station, camera_width, camera_height)
         self.model = station
@@ -221,15 +222,12 @@ class Machine:
         """
         Checks to see if anyone is inside the machine
         """
-        p_top_x = person[0] + self.padding
-        p_left_y = person[1] + self.padding
-        p_bottom_x = person[2] - self.padding
-        p_right_y = person[3] - self.padding
+        p_top_x = person[0] - self.padding
+        p_left_y = person[1] - self.padding
+        p_bottom_x = person[2] + self.padding
+        p_right_y = person[3] + self.padding
 
-        if p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x and p_right_y <= self.right_y \
-                or p_top_x < self.top_x and p_left_y < self.left_y and p_bottom_x > self.bottom_x and p_right_y > self.right_y:
-            return True
-        else:
-            return False
+        return p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x \
+            and p_right_y <= self.right_y
 
     # Add function to calculate overlapping machines

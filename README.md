@@ -28,11 +28,11 @@ Possible run options:
 ```
 1. Run the camera with the --configure parameter to initialize the Machines array
     ```
-    python3 run_camera.py --model-type YOLOV3 --model_location yolo.h5 --usb --configure --gym "Golds Gym" --location NW
+    python3 run_camera.py --model-type YOLOV3 --model-location yolo.h5 --usb --configure --gym "Golds Gym" --location NW
     ```
 2. Run the library
     ```
-    python3 run_camera.py --model-type YOLOV3 --model_location yolo.h5 --usbcam --gym "Golds Gym" --location NW
+    python3 run_camera.py --model-type YOLOV3 --model-location yolo.h5 --usbcam --gym "Golds Gym" --location NW
     ```
 
 ### Installation
