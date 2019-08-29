@@ -8,12 +8,6 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
-# Initialize the database connection
-# Use a service account to connect to the databse
-cred = credentials.Certificate('./serviceAccount.json')
-firebase_admin.initialize_app(cred)
-db = firestore.client()
-
 model_types = [
     'HOG',
     'YOLOV3',
@@ -40,6 +34,8 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--view_only', help='View camera without running algorithm',
                         action='store_true')
+    parser.add_argument('--production', help='Uses production database',
+                        action='store_true')
 
     return parser.parse_args()
 
@@ -57,6 +53,16 @@ def main():
     headless_mode = False
     if args.headless:
         headless_mode = True
+
+    # Initialize the database connection
+    service_file = "serviceAccount.json"
+    if args.production:
+        service_file = "prod-serviceAccount.json"
+
+    service_account = os.path.expanduser(os.path.join(os.path.dirname(__file__), service_file))
+    cred = credentials.Certificate(service_account)
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
 
     if args.usbcam:
         camera_type = 'usb'
