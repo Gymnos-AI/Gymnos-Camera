@@ -1,5 +1,7 @@
 import cv2
 import time
+import logging
+import numpy as np
 
 from gymnoscamera.cameras.camera import Camera
 
@@ -23,6 +25,13 @@ class UsbCameraRunner(Camera):
         Retrieves a frames from the camera and returns it
         """
         ret, image = self.camera.read()
-        image = cv2.resize(image, (self.camera_height, self.camera_width))
+        try:
+            image = cv2.resize(image, (self.camera_height, self.camera_width))
+        except cv2.error as e:
+            image = np.zeros([self.camera_height, self.camera_width, 3])
+            logging.info("Error getting frame: " + e)
+            time.sleep(0.5)
+            # connect to the stream
+            self.camera = cv2.VideoCapture(0)
 
         return image, time.time()

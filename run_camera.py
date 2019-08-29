@@ -1,5 +1,8 @@
 import argparse
 import os
+import logging
+from datetime import date
+from os.path import expanduser
 
 from gymnoscamera.cameras import camera_factory
 from gymnoscamera.cameras import CalibrateCam
@@ -13,6 +16,21 @@ model_types = [
     'YOLOV3',
     'YOLOV3RT'
 ]
+
+log_location = expanduser("~") + '/logs/gymnos_camera'
+try:
+    os.makedirs(log_location)
+except OSError:
+    print("Creation of the directory %s failed" % log_location)
+else:
+    print("Successfully created the directory %s " % log_location)
+
+today = date.today()
+file_name = '{}/{}.log'.format(log_location, today)
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S',
+                    filename=file_name,
+                    level=logging.INFO)
 
 
 def parse_args():
@@ -48,11 +66,9 @@ def main():
 
     :return:
     """
-    args = parse_args()
 
-    headless_mode = False
-    if args.headless:
-        headless_mode = True
+    args = parse_args()
+    logging.info("Starting GymnosCamera with: " + str(args))
 
     # Initialize the database connection
     service_file = "serviceAccount.json"
