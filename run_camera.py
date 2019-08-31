@@ -6,6 +6,7 @@ from os.path import expanduser
 
 from gymnos_firestore import gyms, machines, usage
 from matchbox import database
+from matchbox.queries.error import DocumentDoesNotExists
 
 from gymnoscamera.cameras import camera_factory
 from gymnoscamera.cameras import CalibrateCam
@@ -70,7 +71,14 @@ def get_gym(gym_name: str = None, gym_location: str = None) -> gyms.Gyms:
     if not gym_location:
         gym_location = input('Please enter the gym location: ')
 
-    gym = gyms.Gyms.objects.get(Name=gym_name, Location=gym_location)
+    try:
+        gym = gyms.Gyms.objects.get(name=gym_name, location=gym_location)
+    except DocumentDoesNotExists as e:
+        response = input('Gym not found, do you want to create a new gym? (y/N): ')
+        if response == 'y':
+            gym = gyms.Gyms.objects.create(name=gym_name, location=gym_location)
+        else:
+            raise DocumentDoesNotExists(e)
 
     if not gym:
         raise ValueError("Could not find a gym with name '{}' and location '{}'".format(gym_name, gym_location))

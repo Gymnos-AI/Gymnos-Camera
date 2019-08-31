@@ -7,11 +7,6 @@ import gymnos_firestore.machines as machines
 from gymnos_firestore import usage
 from matchbox.queries.error import DocumentDoesNotExists
 
-TOP_X = "TopX"
-LEFT_Y = "LeftY"
-BOTTOM_X = "BottomX"
-RIGHT_Y = "RightY"
-
 
 class Machine:
     """
@@ -98,10 +93,10 @@ class Machine:
 
         :return:
         """
-        top_x = int(station.location[TOP_X] * camera_width)
-        left_y = int(station.location[LEFT_Y] * camera_height)
-        bottom_x = int(station.location[BOTTOM_X] * camera_width)
-        right_y = int(station.location[RIGHT_Y] * camera_height)
+        top_x = int(station.location[machines.MACHINE_LOC_TOPX] * camera_width)
+        left_y = int(station.location[machines.MACHINE_LOC_LEFTY] * camera_height)
+        bottom_x = int(station.location[machines.MACHINE_LOC_BOTTOMX] * camera_width)
+        right_y = int(station.location[machines.MACHINE_LOC_RIGHTY] * camera_height)
 
         return top_x, left_y, bottom_x, right_y
 
@@ -172,7 +167,7 @@ class Machine:
         time_used = end - start
 
         try:
-            usage_today = usage.Usage.objects.get(MachineID=self.model.id, Date=today, Name=self.model.name)
+            usage_today = usage.Usage.objects.get(machine_id=self.model.id, date=today)
         except DocumentDoesNotExists:
             usage_today = usage.Usage()
             usage_today.date = today
@@ -223,10 +218,10 @@ class Machine:
         """
         Checks to see if anyone is inside the machine
         """
-        p_top_x = person[0] - self.padding
-        p_left_y = person[1] - self.padding
-        p_bottom_x = person[2] + self.padding
-        p_right_y = person[3] + self.padding
+        p_top_x = person[0] + self.padding
+        p_left_y = person[1] + self.padding
+        p_bottom_x = person[2] - self.padding
+        p_right_y = person[3] - self.padding
 
         return p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x \
             and p_right_y <= self.right_y

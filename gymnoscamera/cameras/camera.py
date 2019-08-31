@@ -42,7 +42,7 @@ class Camera(ABC):
         """
         for station in self.get_configured_machines():
             self.stations.append(machine.Machine(station, self.camera_width, self.camera_height))
-        logging.info("Stations used: " + str(self.get_stations()))
+        logging.info("Stations used: " + str(self.get_configured_machines()))
 
     def get_configured_machines(self):
         """
