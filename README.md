@@ -3,7 +3,9 @@
 Library for camera and predictions
 
 ## Setup
-1. Add the serviceAccount.json into the root directory. This file will give this client access to the database. Link: https://drive.google.com/drive/u/0/folders/1HuFFFOWCW10DOTLfIKfUGBdGEdzQYOiP
+1. Add the serviceAccount.json into the root directory. This file will give this client access to the database.
+If you want to run this camera on the production database, Add the prod-serviceAccount.json instead.
+Link: https://drive.google.com/drive/u/0/folders/1HuFFFOWCW10DOTLfIKfUGBdGEdzQYOiP
 2. Add the gym_info.json file in ./gymnoscamera. This file stores all information about your gym and it's machines. 
 It is also used by the client to access the database. Link: https://drive.google.com/drive/u/0/folders/1HuFFFOWCW10DOTLfIKfUGBdGEdzQYOiP
 3. Add the yolo.h5 to the root directory. This file will load the AI during runtime. Link: https://drive.google.com/drive/u/0/folders/1fibgr4c2CUMItWOngjTxwhqSzsHXBXvT
@@ -25,6 +27,7 @@ Possible run options:
 --mac = If you are running this library on a mac
 --headless = Run without GUI
 --view_only = Run without using the model
+--production = Use the production database
 ```
 1. Run the camera with the --configure parameter to initialize the Machines array
     ```

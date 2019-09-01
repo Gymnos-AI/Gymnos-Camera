@@ -11,9 +11,6 @@ from matchbox.queries.error import DocumentDoesNotExists
 from gymnoscamera.cameras import camera_factory
 from gymnoscamera.cameras import CalibrateCam
 
-# Initialize orm
-database.db_initialization('./serviceAccount.json')
-
 model_types = [
     'HOG',
     'YOLOV3',
@@ -59,6 +56,8 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--view-only', help='View camera without running algorithm',
                         action='store_true')
+    parser.add_argument('--production', help='Uses production database',
+                        action='store_true')
 
     return parser.parse_args()
 
@@ -98,6 +97,14 @@ def main():
     args = parse_args()
 
     logging.info("Starting GymnosCamera with: " + str(args))
+
+    # Initialize the database connection
+    service_file = "serviceAccount.json"
+    if args.production:
+        service_file = "prod-serviceAccount.json"
+
+    service_account = os.path.expanduser(os.path.join(os.path.dirname(__file__), service_file))
+    database.db_initialization(service_account)
 
     if args.usbcam:
         camera_type = 'usb'
