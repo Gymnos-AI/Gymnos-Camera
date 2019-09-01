@@ -4,12 +4,12 @@ import logging
 from datetime import date
 from os.path import expanduser
 
+from gymnos_firestore import gyms, machines, usage
+from matchbox import database
+from matchbox.queries.error import DocumentDoesNotExists
+
 from gymnoscamera.cameras import camera_factory
 from gymnoscamera.cameras import CalibrateCam
-
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
 
 model_types = [
     'HOG',
@@ -36,12 +36,16 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('model_type', help='Choose from [HOG, YOLOV3, YOLOV3RT]',
-                        action='store')
-    parser.add_argument('--configure', help='Configure Machine locations',
+    parser.add_argument('--configure', help='Configuring the camera',
                         action='store_true')
-    parser.add_argument('--model_location', help='A file path to a model file',
+    parser.add_argument('--gym', help='Which gym to attempt to connect to',
+                        action='store')
+    parser.add_argument('--location', help='Which gym location to attempt to connect to',
+                        action='store')
+    parser.add_argument('--model-location', help='A file path to a model file',
                         action='store', required=True)
+    parser.add_argument('--model-type', help='Choose from [HOG, YOLOV3, YOLOV3RT]',
+                        action='store')
     parser.add_argument('--usbcam', help='Use a USB webcam instead of picamera',
                         action='store_true')
     parser.add_argument('--ipcam', help='Use an IP webcam',
@@ -50,12 +54,35 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--headless', help='Run the algorithm without GUI',
                         action='store_true')
-    parser.add_argument('--view_only', help='View camera without running algorithm',
+    parser.add_argument('--view-only', help='View camera without running algorithm',
                         action='store_true')
     parser.add_argument('--production', help='Uses production database',
                         action='store_true')
 
     return parser.parse_args()
+
+
+def get_gym(gym_name: str = None, gym_location: str = None) -> gyms.Gyms:
+
+    if not gym_name:
+        gym_name = input('Please enter the gym name: ')
+
+    if not gym_location:
+        gym_location = input('Please enter the gym location: ')
+
+    try:
+        gym = gyms.Gyms.objects.get(name=gym_name, location=gym_location)
+    except DocumentDoesNotExists as e:
+        response = input('Gym not found, do you want to create a new gym? (y/N): ')
+        if response == 'y':
+            gym = gyms.Gyms.objects.create(name=gym_name, location=gym_location)
+        else:
+            raise DocumentDoesNotExists(e)
+
+    if not gym:
+        raise ValueError("Could not find a gym with name '{}' and location '{}'".format(gym_name, gym_location))
+
+    return gym
 
 
 def main():
@@ -68,6 +95,7 @@ def main():
     """
 
     args = parse_args()
+
     logging.info("Starting GymnosCamera with: " + str(args))
 
     # Initialize the database connection
@@ -76,9 +104,7 @@ def main():
         service_file = "prod-serviceAccount.json"
 
     service_account = os.path.expanduser(os.path.join(os.path.dirname(__file__), service_file))
-    cred = credentials.Certificate(service_account)
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
+    database.db_initialization(service_account)
 
     if args.usbcam:
         camera_type = 'usb'
@@ -93,17 +119,29 @@ def main():
 
     model_path = os.path.abspath(args.model_location)
 
+    # Get the gym
+    gym = get_gym(args.gym, args.location)
+
+    # Hack to select the correct collection names
+    # noinspection PyProtectedMember
+    machines.Machines._meta.collection_name = "{}/{}/{}".format(
+        gyms.Gyms.collection_name(), gym.id, machines.Machines.collection_name())
+    # noinspection PyProtectedMember
+    usage.Usage._meta.collection_name = "{}/{}/{}".format(
+        gyms.Gyms.collection_name(), gym.id, usage.Usage.collection_name())
+
     # Get the selected camera
-    camera = camera_factory.factory.get_camera(db, camera_type, model_type, model_path)
+    camera = camera_factory.factory.get_camera(camera_type, model_type, model_path)
 
     if args.headless:
-        camera.set_head_less()
+        camera.set_headless()
 
     if args.view_only:
         camera.set_view_only()
 
     if args.configure:
-        calibrate = CalibrateCam.CalibrateCam(db, camera, args.mac)
+        # TODO: Add option to read from gymnos_info.json file to retrieve machines locally instead of querying the DB.
+        calibrate = CalibrateCam.CalibrateCam(camera, args.mac)
         calibrate.main()
     else:
         camera.run_loop()

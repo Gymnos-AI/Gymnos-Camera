@@ -1,32 +1,21 @@
-import cv2
-import gymnos_firestore.Machines as machines
+import datetime
 import threading
 import logging
 
-# Gym collection keys
-GYM_COLLECTION = u'Gyms'
-
-# Machine collection keys
-MACHINE_COLLECTION = u'Machines'
-MACHINE_ID = u'MachineID'
-MACHINE_NAME = u'Name'
-MACHINE_OPEN = u'Open'
+import cv2
+import gymnos_firestore.machines as machines
+from gymnos_firestore import usage
+from matchbox.queries.error import DocumentDoesNotExists
 
 
 class Machine:
     """
     This class keeps track of machine coordinates and machine usage
     """
-    def __init__(self, db, station, camera_width, camera_height):
-        (gym_id, machine_id, name, top_x, left_y, bottom_x, right_y) = station
-        (top_x, left_y, bottom_x, right_y) = self.convert_station_ratios((top_x, left_y, bottom_x, right_y),
-                                                                         camera_width,
-                                                                         camera_height)
-        self.db = db
 
-        self.name = name
-        self.gym_id = gym_id
-        self.machine_id = machine_id
+    def __init__(self, station: machines.Machines, camera_width, camera_height):
+        (top_x, left_y, bottom_x, right_y) = self.convert_station_ratios(station, camera_width, camera_height)
+        self.model = station
 
         # Coordinates
         self.top_x = top_x
@@ -55,7 +44,7 @@ class Machine:
         self.padding = 10
 
     def get_machine_colour(self):
-        if self.name == "squat_rack":
+        if self.model.name == "squat_rack":
             return 0, 0, 255
         else:
             return 255, 0, 0
@@ -68,7 +57,7 @@ class Machine:
         :return:
         """
         cv2.putText(image,
-                    self.name,
+                    self.model.name,
                     (self.top_x,
                      self.left_y + 25),
                     cv2.FONT_HERSHEY_SIMPLEX,
@@ -95,30 +84,29 @@ class Machine:
                           self.border_colour,
                           1)
 
-    def convert_station_ratios(self, station, camera_width, camera_height):
+    def convert_station_ratios(self, station: machines.Machines, camera_width: int, camera_height: int):
         """
         This function converts station ratios to real pixel values
         :param station:
-        :param camera_height:
         :param camera_width:
+        :param camera_height:
 
         :return:
         """
-        a, b, c, d = station
-        w, h = camera_width, camera_height
-        top_x, left_y, bottom_x, right_y = int(a * w), int(b * h), int(c * w), int(d * h)
+        top_x = int(station.location[machines.MACHINE_LOC_TOPX] * camera_width)
+        left_y = int(station.location[machines.MACHINE_LOC_LEFTY] * camera_height)
+        bottom_x = int(station.location[machines.MACHINE_LOC_BOTTOMX] * camera_width)
+        right_y = int(station.location[machines.MACHINE_LOC_RIGHTY] * camera_height)
 
         return top_x, left_y, bottom_x, right_y
 
-    def increment_machine_time(self, people, image, image_cap_time):
+    def increment_machine_time(self, people, image_cap_time):
         """
         This function checks if a person is using a machine. If
         there is somebody there increment the machine usage time.
 
-        :param person: Co-ordinates of a single person
-        :param image: Reference to the frame under prediction
+        :param people: Co-ordinates of a single person
         :param image_cap_time: The exact time the image was captured on
-        :param time_widget: Reference to the frame_timer widget
         """
         # Find out if there is at least one person using the machine
         person_inside = False
@@ -132,7 +120,7 @@ class Machine:
         # if there is somebody in the machine
         if person_inside:
             self.last_seen_unix = image_cap_time
-            if self.inside is False:
+            if not self.inside:
                 self.inside = True
                 self.first_detected = image_cap_time
             elif self.inside and not self.using:
@@ -141,10 +129,10 @@ class Machine:
                 # of time, we can be sure the machine is in use
                 if diff > self.time_threshold:
                     # Tell all clients this machine is being used now
-                    machines.update_status(self.db,
-                                           self.gym_id,
-                                           self.machine_id,
-                                           False)
+                    if self.model.open:
+                        self.model.open = False
+                        self.model.save()
+
                     self.using = True
                     self.time_elapsed = self.first_detected
         else:
@@ -163,40 +151,38 @@ class Machine:
                     logging.info("Used for: " + str(image_cap_time - self.first_detected))
 
                     # Send to database
-                    db_thread = threading.Thread(target=self.send_usage_to_database, args=[image_cap_time])
+                    start_time, end_time = self.first_detected, image_cap_time
+                    db_thread = threading.Thread(target=self.insert_machine_time, args=[start_time, end_time])
                     db_thread.start()
 
-    def send_usage_to_database(self, image_cap_time):
+    def insert_machine_time(self, start: int, end: int):
         """
-        Send DB in a thread to speed up execution of incrementation loop
+        Inserts a row of machine usage
+
+        :param start: Start of machine usage in Unix time
+        :param end: End of machine usage in Unix time
         """
-        machines.insert_machine_time(self.db,
-                                     self.gym_id,
-                                     self.name,
-                                     self.machine_id,
-                                     self.first_detected,
-                                     image_cap_time)
+        today = datetime.date.today().strftime("%Y/%m/%d")
+        machine_time = '{}#{}'.format(start, end)
+        time_used = end - start
 
-        machines.update_status(self.db,
-                               self.gym_id,
-                               self.machine_id,
-                               True)
+        try:
+            usage_today = usage.Usage.objects.get(machine_id=self.model.id, date=today)
+        except DocumentDoesNotExists:
+            usage_today = usage.Usage()
+            usage_today.date = today
+            usage_today.machine_id = self.model.id
+            usage_today.name = self.model.name
+            usage_today.times = []
+            usage_today.total_time = 0
 
-    def watch_machine_status(self):
-        # Create a callback on_snapshot function to capture changes
-        def on_snapshot(doc_snapshot, changes, read_time):
-            for doc in doc_snapshot:
-                machine_dict = doc.to_dict()
-                machine_open = machine_dict[MACHINE_OPEN]
-                if machine_open:
-                    self.using = False
-                else:
-                    self.using = True
+        usage_today.times.append(machine_time)
+        usage_today.total_time += time_used
+        usage_today.save()
 
-        doc_ref = self.db.collection(GYM_COLLECTION).document(self.gym_id).collection(MACHINE_COLLECTION).document(self.machine_id)
-
-        # Watch the document
-        doc_ref.on_snapshot(on_snapshot)
+        if not self.model.open:
+            self.model.open = True
+            self.model.save()
 
     def calculate_iou(self, box_a, box_b):
         """
@@ -237,9 +223,7 @@ class Machine:
         p_bottom_x = person[2] - self.padding
         p_right_y = person[3] - self.padding
 
-        if p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x and p_right_y <= self.right_y:
-            return True
-        else:
-            return False
+        return p_top_x >= self.top_x and p_left_y >= self.left_y and p_bottom_x <= self.bottom_x \
+            and p_right_y <= self.right_y
 
     # Add function to calculate overlapping machines

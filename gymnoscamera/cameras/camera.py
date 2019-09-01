@@ -3,34 +3,23 @@ import os
 from abc import ABC
 import time
 import cv2
+from gymnos_firestore import machines
+from gymnos_firestore.machines import MACHINE_COLLECTION
 import logging
 
 from gymnoscamera import machine, predictors
 
 JSON_LOCATION = "../gym_info.json"
-GYM_ID = "GymID"
-MACHINES = "Machines"
-MACHINE_ID = "MachineID"
-MACHINE_OPEN = "Open"
-MACHINE_NAME = "Name"
-MACHINE_LOCATION = "Location"
-TOP_X = "TopX"
-LEFT_Y = "LeftY"
-BOTTOM_X = "BottomX"
-RIGHT_Y = "RightY"
 
 
 class Camera(ABC):
 
-    def __init__(self, db, model_type, model_path: str):
+    def __init__(self, model_type:str, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:
         """
-        self.db = db
-
         self.headless_mode = False
-
         self.view_only = False
 
         # initialize general camera params
@@ -47,34 +36,32 @@ class Camera(ABC):
         self.set_stations()
 
     def set_stations(self):
-        for station in self.get_stations():
-            self.stations.append(machine.Machine(self.db, station,
-                                                 self.camera_width,
-                                                 self.camera_height))
-        logging.info("Stations used: " + str(self.get_stations()))
+        """
+        Set the machine stations for this camera
+        :return:
+        """
+        for station in self.get_configured_machines():
+            self.stations.append(machine.Machine(station, self.camera_width, self.camera_height))
+        logging.info("Stations used: " + str(self.get_configured_machines()))
 
-    def get_stations(self):
+    def get_configured_machines(self):
         """
         Retrieves the machines from the JSON file and returns it
-        as a list
+        as a list of machine models
 
-        :return: stations: [[name, topX, leftY, bottomX, rightY]]
+        :return: stations: [machine model]
         """
 
         stations = []
         with open(os.path.join(os.path.dirname(__file__), JSON_LOCATION)) as json_file:
             data = json.load(json_file)
-            gym_id = data[GYM_ID]
-            for machine in data[MACHINES]:
-                locations = machine[MACHINE_LOCATION]
-                machine_id = machine[MACHINE_ID]
-                stations.append([gym_id,
-                                 machine_id,
-                                 machine[MACHINE_NAME],
-                                 locations[TOP_X],
-                                 locations[LEFT_Y],
-                                 locations[BOTTOM_X],
-                                 locations[RIGHT_Y]])
+            for machine_data in data[MACHINE_COLLECTION]:
+                machine_model = machines.Machines()
+                machine_model.id = machine_data['id']
+                machine_model.name = machine_data[machines.MACHINE_NAME]
+                machine_model.location = machine_data[machines.MACHINE_LOC]
+
+                stations.append(machine_model)
 
         return stations
 
@@ -107,7 +94,7 @@ class Camera(ABC):
 
                 # Calculate station usage
                 for station in self.stations:
-                    station.increment_machine_time(people_coords, image, frame_cap_time)
+                    station.increment_machine_time(people_coords, frame_cap_time)
 
             draw_machines(image)
 
@@ -124,7 +111,7 @@ class Camera(ABC):
         for station in self.stations:
             station.watch_machine_status()
 
-    def set_head_less(self):
+    def set_headless(self):
         logging.info("Setting headless mode")
         self.headless_mode = True
 
