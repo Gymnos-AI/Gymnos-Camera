@@ -13,6 +13,9 @@ setup(
     },
 
     install_requires=[
+        # Gymnos packages
+        'gymnosfirestoreapi==0.4',
+        # Pypi packages
         'absl-py>=0.7.1',
         'astor>=0.8.0',
         'cycler>=0.10.0',

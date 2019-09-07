@@ -3,9 +3,10 @@ import os
 import logging
 from datetime import date
 from os.path import expanduser
+from typing import ClassVar
 
-from gymnos_firestore import gyms, machines, usage
-from matchbox import database
+from gymnos_firestore import camera, gyms, machines, usage
+from matchbox import database, models
 from matchbox.queries.error import DocumentDoesNotExists
 
 from gymnoscamera.cameras import camera_factory
@@ -62,8 +63,31 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_gym(gym_name: str = None, gym_location: str = None) -> gyms.Gyms:
+def get_camera(camera_name: str = None) -> camera.Camera:
+    if not camera_name:
+        camera_name = input('Please enter the camera name/MAC address: ')
 
+    try:
+        camera_model = camera.Camera.objects.get(name=camera_name)
+    except DocumentDoesNotExists:
+        response = input('Camera with name {} not found, do you want to create a new camera? (y/N): '
+                         .format(camera_name))
+        if response == 'y':
+            camera_model = camera.Camera.create(name=camera_name)
+        else:
+            raise
+
+    return camera_model
+
+
+def get_gym(gym_name: str = None, gym_location: str = None) -> gyms.Gyms:
+    """
+    Find a gym and optionally create a new one if one does not exist.
+
+    :param gym_name:
+    :param gym_location:
+    :return:
+    """
     if not gym_name:
         gym_name = input('Please enter the gym name: ')
 
@@ -72,17 +96,21 @@ def get_gym(gym_name: str = None, gym_location: str = None) -> gyms.Gyms:
 
     try:
         gym = gyms.Gyms.objects.get(name=gym_name, location=gym_location)
-    except DocumentDoesNotExists as e:
-        response = input('Gym not found, do you want to create a new gym? (y/N): ')
+    except DocumentDoesNotExists:
+        response = input('Gym with name {} and location {} not found, do you want to create a new gym? (y/N): '
+                         .format(gym_name, gym_location))
         if response == 'y':
             gym = gyms.Gyms.objects.create(name=gym_name, location=gym_location)
         else:
-            raise DocumentDoesNotExists(e)
-
-    if not gym:
-        raise ValueError("Could not find a gym with name '{}' and location '{}'".format(gym_name, gym_location))
+            raise
 
     return gym
+
+
+def set_subcollection(parent_model: models.Model, child_model_class: ClassVar[models.Model]):
+    # noinspection PyProtectedMember
+    child_model_class._meta.collection_name = "{}/{}/{}".format(
+        parent_model.collection_name(), parent_model.id, child_model_class.collection_name())
 
 
 def main():
@@ -123,28 +151,25 @@ def main():
     gym = get_gym(args.gym, args.location)
 
     # Hack to select the correct collection names
-    # noinspection PyProtectedMember
-    machines.Machines._meta.collection_name = "{}/{}/{}".format(
-        gyms.Gyms.collection_name(), gym.id, machines.Machines.collection_name())
-    # noinspection PyProtectedMember
-    usage.Usage._meta.collection_name = "{}/{}/{}".format(
-        gyms.Gyms.collection_name(), gym.id, usage.Usage.collection_name())
+    for model_class in [camera.Camera, machines.Machines, usage.Usage]:
+        # noinspection PyTypeChecker
+        set_subcollection(gym, model_class)
 
     # Get the selected camera
-    camera = camera_factory.factory.get_camera(camera_type, model_type, model_path)
+    camera_device = camera_factory.factory.get_camera(camera_type, model_type, model_path)
 
     if args.headless:
-        camera.set_headless()
+        camera_device.set_headless()
 
     if args.view_only:
-        camera.set_view_only()
+        camera_device.set_view_only()
 
     if args.configure:
         # TODO: Add option to read from gymnos_info.json file to retrieve machines locally instead of querying the DB.
-        calibrate = CalibrateCam.CalibrateCam(camera, args.mac)
+        calibrate = CalibrateCam.CalibrateCam(camera_device, args.mac)
         calibrate.main()
     else:
-        camera.run_loop()
+        camera_device.run_loop()
 
 
 if __name__ == '__main__':
