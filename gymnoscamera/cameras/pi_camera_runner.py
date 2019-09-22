@@ -3,10 +3,10 @@ import time
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 
-from gymnoscamera.cameras.camera import Camera
+from gymnoscamera.cameras.camera_runner import CameraRunner
 
 
-class PiCameraRunner(Camera):
+class PiCameraRunner(CameraRunner):
     """
     An implementation of a Camera runner which sources its camera from a Pi Camera
     """

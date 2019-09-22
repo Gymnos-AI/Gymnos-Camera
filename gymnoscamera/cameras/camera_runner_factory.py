@@ -1,9 +1,9 @@
-class CameraFactory:
+class CameraRunnerFactory:
     """
-    Returns an initialized implementation of a camera class, provided it has been registered.
+    Returns an initialized implementation of a camera class, provided it is a supported type.
     """
 
-    def get_camera(self, camera_type: str, model_type: str, model_path: str):
+    def get_camera_runner(self, camera_type: str, model_type: str, model_path: str):
         if camera_type == 'usb':
             from gymnoscamera.cameras.usb_camera_runner import UsbCameraRunner
             return UsbCameraRunner(model_type, model_path)
@@ -17,4 +17,4 @@ class CameraFactory:
             raise ValueError(camera_type)
 
 
-factory = CameraFactory()
+factory = CameraRunnerFactory()

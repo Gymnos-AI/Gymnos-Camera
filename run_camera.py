@@ -1,6 +1,6 @@
 import argparse
-import os
 import logging
+import os
 from datetime import date
 from os.path import expanduser
 from typing import ClassVar
@@ -9,8 +9,7 @@ from gymnos_firestore import camera, gyms, machines, usage
 from matchbox import database, models
 from matchbox.queries.error import DocumentDoesNotExists
 
-from gymnoscamera.cameras import camera_factory
-from gymnoscamera.cameras import CalibrateCam
+from gymnoscamera.cameras import CalibrateCam, camera_runner_factory
 
 model_types = [
     'HOG',
@@ -43,6 +42,8 @@ def parse_args():
                         action='store')
     parser.add_argument('--location', help='Which gym location to attempt to connect to',
                         action='store')
+    parser.add_argument('--camera-name', help='Which camera to attempt to connect to',
+                        action='store_true')
     parser.add_argument('--model-location', help='A file path to a model file',
                         action='store', required=True)
     parser.add_argument('--model-type', help='Choose from [HOG, YOLOV3, YOLOV3RT]',
@@ -61,23 +62,6 @@ def parse_args():
                         action='store_true')
 
     return parser.parse_args()
-
-
-def get_camera(camera_name: str = None) -> camera.Camera:
-    if not camera_name:
-        camera_name = input('Please enter the camera name/MAC address: ')
-
-    try:
-        camera_model = camera.Camera.objects.get(name=camera_name)
-    except DocumentDoesNotExists:
-        response = input('Camera with name {} not found, do you want to create a new camera? (y/N): '
-                         .format(camera_name))
-        if response == 'y':
-            camera_model = camera.Camera.create(name=camera_name)
-        else:
-            raise
-
-    return camera_model
 
 
 def get_gym(gym_name: str = None, gym_location: str = None) -> gyms.Gyms:
@@ -100,14 +84,37 @@ def get_gym(gym_name: str = None, gym_location: str = None) -> gyms.Gyms:
         response = input('Gym with name {} and location {} not found, do you want to create a new gym? (y/N): '
                          .format(gym_name, gym_location))
         if response == 'y':
-            gym = gyms.Gyms.objects.create(name=gym_name, location=gym_location)
+            gym = gyms.Gyms()
+            gym.name = gym_name
+            gym.location = gym_location
+            gym.save()
         else:
             raise
 
     return gym
 
 
-def set_subcollection(parent_model: models.Model, child_model_class: ClassVar[models.Model]):
+def get_camera(camera_name: str = None) -> camera.Camera:
+    if not camera_name:
+        camera_name = input('Please enter the camera name/MAC address: ')
+
+    try:
+        camera_model = camera.Camera.objects.get(name=camera_name)
+    except DocumentDoesNotExists:
+        response = input('Camera with name {} not found, do you want to create a new camera? (y/N): '
+                         .format(camera_name))
+        if response == 'y':
+            camera_model = camera.Camera()
+            camera_model.name = camera_name
+            camera_model.machine_id_list = list()
+            camera_model.save()
+        else:
+            raise
+
+    return camera_model
+
+
+def set_sub_collection(parent_model: models.Model, child_model_class: ClassVar[models.Model]):
     # noinspection PyProtectedMember
     child_model_class._meta.collection_name = "{}/{}/{}".format(
         parent_model.collection_name(), parent_model.id, child_model_class.collection_name())
@@ -153,10 +160,12 @@ def main():
     # Hack to select the correct collection names
     for model_class in [camera.Camera, machines.Machines, usage.Usage]:
         # noinspection PyTypeChecker
-        set_subcollection(gym, model_class)
+        set_sub_collection(gym, model_class)
+
+    camera_model = get_camera(args.camera_name)
 
     # Get the selected camera
-    camera_device = camera_factory.factory.get_camera(camera_type, model_type, model_path)
+    camera_device = camera_runner_factory.factory.get_camera_runner(camera_type, model_type, model_path)
 
     if args.headless:
         camera_device.set_headless()
@@ -166,7 +175,7 @@ def main():
 
     if args.configure:
         # TODO: Add option to read from gymnos_info.json file to retrieve machines locally instead of querying the DB.
-        calibrate = CalibrateCam.CalibrateCam(camera_device, args.mac)
+        calibrate = CalibrateCam.CalibrateCam(camera_device, camera_model, args.mac)
         calibrate.main()
     else:
         camera_device.run_loop()

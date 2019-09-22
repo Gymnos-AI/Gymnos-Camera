@@ -4,7 +4,7 @@ from threading import Thread, Lock
 import numpy as np
 import logging
 
-from gymnoscamera.cameras.camera import Camera
+from gymnoscamera.cameras.camera_runner import CameraRunner
 
 user = 'admin'
 password = 'MZEJUT'
@@ -14,7 +14,7 @@ stream = 'h264_stream'
 mutex = Lock()
 
 
-class IpCameraRunner(Camera):
+class IpCameraRunner(CameraRunner):
     """
     An implementation of a Camera runner which sources its camera from a USB camera
     """

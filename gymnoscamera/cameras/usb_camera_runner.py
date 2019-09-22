@@ -3,13 +3,13 @@ import time
 import logging
 import numpy as np
 
-from gymnoscamera.cameras.camera import Camera
+from gymnoscamera.cameras.camera_runner import CameraRunner
 
 iou_threshold = 0.01
 time_threshold = 2  # how many seconds until machine is sure you are in or out
 
 
-class UsbCameraRunner(Camera):
+class UsbCameraRunner(CameraRunner):
     """
     An implementation of a Camera runner which sources its camera from a USB camera
     """

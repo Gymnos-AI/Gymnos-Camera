@@ -5,13 +5,13 @@ import tkinter as tk
 from tkinter import *
 
 import cv2
-# Constants
-# Keys to accessing and storing into the Json File
-from gymnos_firestore import machines
+from gymnos_firestore import machines, camera
+from gymnos_firestore.camera import CAMERA_COLLECTION
 from gymnos_firestore.machines import MACHINE_LOC_TOPX, MACHINE_LOC_LEFTY, MACHINE_LOC_BOTTOMX, MACHINE_LOC_RIGHTY, \
     MACHINE_COLLECTION
 
-# Popup constants
+from gymnoscamera.cameras.camera_runner import CameraRunner
+
 JSON_LOCATION = "./gymnoscamera/gym_info.json"
 POPUP_TITLE = "Options"
 POPUP_DIMENSIONS = "100x100"
@@ -24,16 +24,17 @@ OPTIONS = [
 
 class CalibrateCam:
     """This class runs the configuration app which allows for machine modification"""
-    def __init__(self, camera, using_mac):
-        self.camera = camera
+    def __init__(self, camera_runner: CameraRunner, camera_model: camera.Camera, using_mac: bool):
+        self.camera_runner = camera_runner
+        self.camera_model = camera_model
         self.using_mac = using_mac
         self.drawing = False
 
         # Get current machines from db
         # TODO: This should be a specific query for machines controlled by this camera
-        machines_list = list(machines.Machines.objects.all().execute())
-        self.machines_container = [
-            (machine, self.convert_scaled_to_absolute(machine.location, self.camera.get_dimensions()))
+        machines_list = list(machines.Machines.objects.filter(id__in=camera_model.machine_id_list))
+        self.machines_models = [
+            (machine, self.convert_scaled_to_absolute(machine.location, self.camera_runner.get_dimensions()))
             for machine in machines_list
         ]
         self.new_machines_idx_list = []
@@ -67,21 +68,22 @@ class CalibrateCam:
                     MACHINE_LOC_BOTTOMX: self.p2[0],
                     MACHINE_LOC_RIGHTY: self.p2[1]
                 }
-                scaled_location = self.convert_absolute_to_scaled(raw_location, self.camera.get_dimensions())
+                scaled_location = self.convert_absolute_to_scaled(raw_location, self.camera_runner.get_dimensions())
 
                 # Update location if newly drawn machine has same name as an existing machine
                 updating_existing_machine = False
-                for i, machine_tuple in enumerate(self.machines_container):
+                for i, machine_tuple in enumerate(self.machines_models):
                     machine_model, _ = machine_tuple
                     if machine_name == machine_model.name:
                         updating_existing_machine = True
                         machine_model.location = scaled_location
-                        self.machines_container[i] = (machine_model, raw_location)
+                        self.machines_models[i] = (machine_model, raw_location)
                         break
                 # Otherwise, create a new machine
                 if not updating_existing_machine:
-                    self.machines_container.append((
+                    self.machines_models.append((
                         machines.Machines(
+                            camera=self.camera_model,
                             name=machine_name,
                             location=scaled_location
                         ), raw_location
@@ -133,20 +135,30 @@ class CalibrateCam:
         this helps with dealing with variable sizing. We will
         also create new entry's of machines in the database
         """
-        for machine, raw_location in self.machines_container:
+        for machine, raw_location in self.machines_models:
             # Update Machines document in the Database
             machine.save()
 
+            # Add machine to camera model
+            self.camera_model.machine_id_list.append(machine.id)
+
+        self.camera_model.save()
+
         with open(JSON_LOCATION, 'w') as outfile:
-            gym_dict[MACHINE_COLLECTION] = [machine.get_fields() for machine, _ in self.machines_container]
+            machine_list = [machine.get_fields() for machine, _ in self.machines_models]
+            # Delete camera field and replace with a camera_id field for json friendly purposes
+            for machine in machine_list:
+                machine['camera'] = self.camera_model.id
+            gym_dict[MACHINE_COLLECTION] = machine_list
+            gym_dict[CAMERA_COLLECTION] = self.camera_model.get_fields()
             json.dump(gym_dict, outfile, indent=4)
 
     def remove_machine(self):
         """
         Handles the removal of the machine from the list of machines
         """
-        if self.machines_container:
-            self.machines_container.pop()
+        if self.machines_models:
+            self.machines_models.pop()
 
     def popup_msg(self):
         """
@@ -178,13 +190,13 @@ class CalibrateCam:
 
     def main(self):
         while True:
-            img, _ = self.camera.get_frame()
+            img, _ = self.camera_runner.get_frame()
             img_temp = img
 
             if self.p1 and self.p2:
                 cv2.rectangle(img_temp, self.p1, self.p2, ANNOTATION_COLOUR, 2)
 
-            for machine, raw_location in self.machines_container:
+            for machine, raw_location in self.machines_models:
                 points = raw_location
                 cv2.rectangle(img_temp,
                               (points[MACHINE_LOC_TOPX],

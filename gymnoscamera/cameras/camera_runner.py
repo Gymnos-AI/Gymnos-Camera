@@ -1,20 +1,21 @@
 import json
+import logging
 import os
-from abc import ABC
 import time
+from abc import ABC
+
 import cv2
 from gymnos_firestore import machines
 from gymnos_firestore.machines import MACHINE_COLLECTION
-import logging
 
 from gymnoscamera import machine, predictors
 
 JSON_LOCATION = "../gym_info.json"
 
 
-class Camera(ABC):
+class CameraRunner(ABC):
 
-    def __init__(self, model_type:str, model_path: str):
+    def __init__(self, model_type: str, model_path: str):
         """
         Initialize the camera, predictor and stations
         :param model_path:

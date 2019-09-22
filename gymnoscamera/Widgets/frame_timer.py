@@ -14,7 +14,7 @@ OFFSET_Y = 340    # offset for window y axis
 FONT_SIZE = 20
 
 
-class frameTimers:
+class FrameTimer:
 
     def __init__(self, master):
         master.title("Frame Timers")
