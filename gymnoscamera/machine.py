@@ -131,7 +131,8 @@ class Machine:
                     # Tell all clients this machine is being used now
                     if self.model.open:
                         self.model.open = False
-                        self.model.save()
+                        self.model.save(update_fields=['open'])
+                        print('saving as open = false')
 
                     self.using = True
                     self.time_elapsed = self.first_detected
@@ -182,7 +183,7 @@ class Machine:
 
         if not self.model.open:
             self.model.open = True
-            self.model.save()
+            self.model.save(update_fields=['open'])
 
     def calculate_iou(self, box_a, box_b):
         """

@@ -32,7 +32,7 @@ class CalibrateCam:
 
         # Get current machines from db
         # TODO: This should be a specific query for machines controlled by this camera
-        machines_list = list(machines.Machines.objects.filter(id__in=camera_model.machine_id_list))
+        machines_list = list(machines.Machines.objects.filter(camera=camera_model))
         self.machines_models = [
             (machine, self.convert_scaled_to_absolute(machine.location, self.camera_runner.get_dimensions()))
             for machine in machines_list
@@ -135,6 +135,7 @@ class CalibrateCam:
         this helps with dealing with variable sizing. We will
         also create new entry's of machines in the database
         """
+        self.camera_model.machine_id_list = []
         for machine, raw_location in self.machines_models:
             # Update Machines document in the Database
             machine.save()
@@ -146,7 +147,7 @@ class CalibrateCam:
 
         with open(JSON_LOCATION, 'w') as outfile:
             machine_list = [machine.get_fields() for machine, _ in self.machines_models]
-            # Delete camera field and replace with a camera_id field for json friendly purposes
+            # Replace camera object with the id for json friendly purposes
             for machine in machine_list:
                 machine['camera'] = self.camera_model.id
             gym_dict[MACHINE_COLLECTION] = machine_list

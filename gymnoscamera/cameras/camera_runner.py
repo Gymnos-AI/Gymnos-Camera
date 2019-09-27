@@ -59,8 +59,9 @@ class CameraRunner(ABC):
             for machine_data in data[MACHINE_COLLECTION]:
                 machine_model = machines.Machines()
                 machine_model.id = machine_data['id']
-                machine_model.name = machine_data[machines.MACHINE_NAME]
                 machine_model.location = machine_data[machines.MACHINE_LOC]
+                machine_model.name = machine_data[machines.MACHINE_NAME]
+                machine_model.open = True
 
                 stations.append(machine_model)
 
