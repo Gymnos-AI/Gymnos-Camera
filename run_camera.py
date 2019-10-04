@@ -114,12 +114,6 @@ def get_camera(camera_name: str = None) -> camera.Camera:
     return camera_model
 
 
-def set_sub_collection(parent_model: models.Model, child_model_class: ClassVar[models.Model]):
-    # noinspection PyProtectedMember
-    child_model_class._meta.collection_name = "{}/{}/{}".format(
-        parent_model.collection_name(), parent_model.id, child_model_class.collection_name())
-
-
 def main():
     """
     Runs the desired camera type for this device.
@@ -157,10 +151,9 @@ def main():
     # Get the gym
     gym = get_gym(args.gym, args.location)
 
-    # Hack to select the correct collection names
+    # Set sub-collections
     for model_class in [camera.Camera, machines.Machines, usage.Usage]:
-        # noinspection PyTypeChecker
-        set_sub_collection(gym, model_class)
+        model_class.set_base_path(gym)
 
     camera_model = get_camera(args.camera_name)
 

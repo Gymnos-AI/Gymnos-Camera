@@ -132,7 +132,6 @@ class Machine:
                     if self.model.open:
                         self.model.open = False
                         self.model.save(update_fields=['open'])
-                        print('saving as open = false')
 
                     self.using = True
                     self.time_elapsed = self.first_detected

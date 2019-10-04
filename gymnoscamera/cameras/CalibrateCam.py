@@ -31,7 +31,6 @@ class CalibrateCam:
         self.drawing = False
 
         # Get current machines from db
-        # TODO: This should be a specific query for machines controlled by this camera
         machines_list = list(machines.Machines.objects.filter(camera=camera_model))
         self.machines_models = [
             (machine, self.convert_scaled_to_absolute(machine.location, self.camera_runner.get_dimensions()))
